@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registrar Lead — Incubadora</title>
+<style>
+  :root {
+    --bg: #0F1115;
+    --card: #1A1D24;
+    --border: #2A2E38;
+    --text: #ECEDEF;
+    --text-dim: #8A8F9C;
+    --accent: #FF7A30;
+    --accent-dim: #4A3424;
+    --success: #3DDC97;
+    --danger: #FF5C5C;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  .wrap {
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 24px;
+  }
+
+  header .label {
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Pegado rápido ── */
+  .quick-card {
+    background: linear-gradient(180deg, rgba(255,122,48,0.08), rgba(255,122,48,0.02));
+    border: 1px solid var(--accent-dim);
+  }
+
+  .quick-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--accent);
+  }
+
+  .quick-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .quick-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .quick-row textarea {
+    flex: 1;
+    min-height: 48px;
+  }
+
+  .quick-btn {
+    background: var(--accent);
+    color: #1A0E05;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 0 18px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .quick-btn:active { opacity: 0.85; }
+
+  .quick-feedback {
+    font-size: 12px;
+    margin-top: 8px;
+    color: var(--success);
+    display: none;
+  }
+
+  .quick-feedback.show { display: block; }
+
+  .field {
+    margin-bottom: 18px;
+  }
+
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  label .opt {
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  input[type="text"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    width: 100%;
+    background: #11141A;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 70px;
+  }
+
+  .estado-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .estado-opt {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-dim);
+    background: #11141A;
+    transition: all 0.15s;
+  }
+
+  .estado-opt.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* ── Seguimientos ── */
+  .seg-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 8px;
+  }
+
+  .seg-block {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .seg-block .seg-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .seg-block .seg-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .seg-remove {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .add-seg-btn {
+    width: 100%;
+    background: none;
+    border: 1px dashed var(--accent-dim);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 11px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .add-seg-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    color: var(--text-dim);
+    border-color: var(--border);
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--accent);
+    color: #1A0E05;
+    font-weight: 700;
+    font-size: 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  .submit-btn:active { opacity: 0.85; }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .msg {
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .msg.show { display: block; }
+  .msg.success { background: rgba(61, 220, 151, 0.12); border: 1px solid var(--success); color: var(--success); }
+  .msg.error { background: rgba(255, 92, 92, 0.12); border: 1px solid var(--danger); color: var(--danger); }
+
+  .list-toggle {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .list-toggle button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .lead-item {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    font-size: 13px;
+  }
+
+  .lead-item:last-child { border-bottom: none; }
+
+  .lead-item .top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .lead-item .nombre { font-weight: 600; }
+
+  .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .badge.nuevo { background: rgba(255,122,48,0.15); color: var(--accent); }
+  .badge.en_seguimiento { background: rgba(255,200,0,0.15); color: #FFC800; }
+  .badge.caliente { background: rgba(255,92,92,0.15); color: var(--danger); }
+  .badge.cerrado { background: rgba(61,220,151,0.15); color: var(--success); }
+  .badge.frio { background: rgba(138,143,156,0.15); color: var(--text-dim); }
+
+  .lead-item .meta { color: var(--text-dim); font-size: 12px; }
+
+  #listSection { display: none; }
+  #listSection.show { display: block; }
+
+  .loading-text { color: var(--text-dim); font-size: 13px; text-align: center; padding: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="label">Incubadora de Negocios</div>
+    <h1>Registrar Lead</h1>
+  </header>
+
+  <div id="msgBox" class="msg"></div>
+
+  <!-- ⚡ PEGADO RÁPIDO -->
+  <div class="card quick-card">
+    <div class="quick-title">⚡ Pegado rápido</div>
+    <div class="quick-sub">Pega el número, el mensaje de WhatsApp o el contacto. Detecto el teléfono y el nombre automáticamente.</div>
+    <div class="quick-row">
+      <textarea id="quickPaste" placeholder="Ej: Hola soy Carlos Ramírez 477 123 4567, me interesa el curso..."></textarea>
+      <button type="button" class="quick-btn" id="quickBtn">Detectar</button>
+    </div>
+    <div class="quick-feedback" id="quickFeedback"></div>
+  </div>
+
+  <form id="leadForm" class="card">
+    <div class="field">
+      <label for="nombre">Nombre</label>
+      <input type="text" id="nombre" required placeholder="Ej. María Pérez">
+    </div>
+
+    <div class="field">
+      <label for="telefono">Teléfono (con código de país)</label>
+      <input type="tel" id="telefono" required placeholder="Ej. 524771234567">
+    </div>
+
+    <div class="field">
+      <label for="servicio">Servicio de interés <span class="opt">(opcional)</span></label>
+      <select id="servicio">
+        <option value="">— Selecciona —</option>
+        <option value="Pagina Web">Página web</option>
+        <option value="CRM">CRM omnicanal con IA</option>
+        <option value="Agente de IA">Agente de IA</option>
+        <option value="Automatizacion WhatsApp">Automatización WhatsApp con IA</option>
+        <option value="App personalizada">Desarrollo de app personalizada</option>
+        <option value="Curso IA">Curso empresarial de IA</option>
+        <option value="Marketing Digital">Marketing digital</option>
+        <option value="Capacitacion">Capacitación empresarial</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Estado</label>
+      <div class="estado-grid" id="estadoGrid">
+        <div class="estado-opt active" data-val="nuevo">Nuevo</div>
+        <div class="estado-opt" data-val="en_seguimiento">En seguimiento</div>
+        <div class="estado-opt" data-val="caliente">Caliente</div>
+        <div class="estado-opt" data-val="frio">Frío</div>
+      </div>
+    </div>
+
+    <!-- ── SEGUIMIENTOS ── -->
+    <div class="field">
+      <label>Seguimientos <span class="opt">(opcional)</span></label>
+
+      <div class="seg-block">
+        <div class="seg-head">
+          <span class="seg-num">Seguimiento 1</span>
+        </div>
+        <div class="seg-row">
+          <input type="date" id="fechaSeg1">
+          <input type="time" id="horaSeg1">
+        </div>
+      </div>
+
+      <div class="seg-block" id="segBlock2" style="display:none;">
+        <div class="seg-head">
+          <span class="seg-num">Seguimiento 2</span>
+          <button type="button" class="seg-remove" data-target="2">Quitar</button>
+        </div>
+        <div class="seg-row">
+          <input type="date" id="fechaSeg2">
+          <input type="time" id="horaSeg2">
+        </div>
+      </div>
+
+      <div class="seg-block" id="segBlock3" style="display:none;">
+        <div class="seg-head">
+          <span class="seg-num">Seguimiento 3</span>
+          <button type="button" class="seg-remove" data-target="3">Quitar</button>
+        </div>
+        <div class="seg-row">
+          <input type="date" id="fechaSeg3">
+          <input type="time" id="horaSeg3">
+        </div>
+      </div>
+
+      <button type="button" class="add-seg-btn" id="addSegBtn">+ Agregar otro seguimiento</button>
+    </div>
+
+    <div class="field">
+      <label for="origen">Origen <span class="opt">(opcional)</span></label>
+      <select id="origen">
+        <option value="manual">Manual</option>
+        <option value="Meta Ads">Meta Ads</option>
+        <option value="Referido">Referido</option>
+        <option value="Organico">Orgánico / redes</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="notas">Notas <span class="opt">(opcional)</span></label>
+      <textarea id="notas" placeholder="Contexto rápido: qué pidió, objeciones, cuándo decide..."></textarea>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">Guardar lead</button>
+  </form>
+
+  <div class="list-toggle">
+    <button id="toggleListBtn" type="button">Ver leads registrados</button>
+  </div>
+
+  <div id="listSection" class="card">
+    <div id="listContent" class="loading-text">Cargando...</div>
+  </div>
+
+</div>
+
+<script>
+  const SUPABASE_URL = "https://ytxnmscxyjttqftmznqj.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_T3LJo-8teMIkimAtHitGWA_XKjzDBP5";
+
+  const form = document.getElementById('leadForm');
+  const msgBox = document.getElementById('msgBox');
+  const submitBtn = document.getElementById('submitBtn');
+  const estadoGrid = document.getElementById('estadoGrid');
+  let estadoSeleccionado = 'nuevo';
+
+  estadoGrid.addEventListener('click', (e) => {
+    const opt = e.target.closest('.estado-opt');
+    if (!opt) return;
+    document.querySelectorAll('.estado-opt').forEach(el => el.classList.remove('active'));
+    opt.classList.add('active');
+    estadoSeleccionado = opt.dataset.val;
+  });
+
+  function showMsg(text, type) {
+    msgBox.textContent = text;
+    msgBox.className = 'msg show ' + type;
+    setTimeout(() => { msgBox.className = 'msg'; }, 4000);
+  }
+
+  /* ───────── PEGADO RÁPIDO ───────── */
+  const quickBtn = document.getElementById('quickBtn');
+  const quickPaste = document.getElementById('quickPaste');
+  const quickFeedback = document.getElementById('quickFeedback');
+
+  function detectarTelefono(texto) {
+    // Quita todo lo que no sea dígito para analizar
+    const soloDigitos = texto.replace(/[^\d]/g, '');
+    // Busca secuencias de dígitos en el texto original (tolerando espacios, guiones, +, paréntesis)
+    const matches = texto.match(/(\+?\d[\d\s\-\(\)]{8,}\d)/g);
+    if (!matches) return null;
+
+    // Toma el match más largo (suele ser el teléfono completo)
+    let mejor = matches.sort((a, b) => b.replace(/\D/g,'').length - a.replace(/\D/g,'').length)[0];
+    let num = mejor.replace(/\D/g, '');
+
+    // Normaliza a formato con lada México
+    if (num.length === 10) {
+      num = '52' + num;          // 10 dígitos -> agrega 52
+    } else if (num.length === 12 && num.startsWith('52')) {
+      // ya está bien
+    } else if (num.length === 13 && num.startsWith('521')) {
+      num = '52' + num.slice(3); // quita el 1 viejo de WhatsApp
+    }
+    return num.length >= 10 ? num : null;
+  }
+
+  function detectarNombre(texto) {
+    // Quita números y símbolos comunes, busca palabras tipo nombre
+    let limpio = texto
+      .replace(/(\+?\d[\d\s\-\(\)]{6,}\d)/g, ' ')  // quita teléfonos
+      .replace(/[^\p{L}\s]/gu, ' ')                 // quita símbolos, deja letras
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Patrones comunes: "soy Carlos", "me llamo Ana", "habla Pedro"
+    const m = limpio.match(/(?:soy|me llamo|habla|aqui|aquí)\s+([\p{Lu}][\p{L}]+(?:\s+[\p{Lu}]?[\p{L}]+){0,2})/iu);
+    if (m) return m[1].trim();
+
+    // Si no, toma las primeras 2 palabras capitalizadas seguidas
+    const palabras = limpio.split(' ').filter(w => w.length > 1);
+    const capit = palabras.filter(w => /^[\p{Lu}]/u.test(w));
+    if (capit.length >= 2) return capit.slice(0, 2).join(' ');
+    if (capit.length === 1) return capit[0];
+    return null;
+  }
+
+  quickBtn.addEventListener('click', () => {
+    const texto = quickPaste.value.trim();
+    if (!texto) {
+      quickFeedback.style.color = 'var(--danger)';
+      quickFeedback.textContent = 'Pega algo primero.';
+      quickFeedback.classList.add('show');
+      return;
+    }
+
+    const tel = detectarTelefono(texto);
+    const nombre = detectarNombre(texto);
+    let detectado = [];
+
+    if (tel) {
+      document.getElementById('telefono').value = tel;
+      detectado.push('teléfono');
+    }
+    if (nombre) {
+      document.getElementById('nombre').value = nombre;
+      detectado.push('nombre');
+    }
+    // Guarda el texto original en notas como contexto
+    if (texto.length > 5) {
+      const notas = document.getElementById('notas');
+      if (!notas.value.trim()) notas.value = texto;
+    }
+
+    quickFeedback.classList.add('show');
+    if (detectado.length) {
+      quickFeedback.style.color = 'var(--success)';
+      quickFeedback.textContent = '✓ Detecté: ' + detectado.join(' y ') + '. Revisa abajo y guarda.';
+    } else {
+      quickFeedback.style.color = 'var(--danger)';
+      quickFeedback.textContent = 'No encontré teléfono. Captúralo a mano abajo.';
+    }
+  });
+
+  /* ───────── SEGUIMIENTOS ───────── */
+  const addSegBtn = document.getElementById('addSegBtn');
+  let segVisibles = 1;
+
+  addSegBtn.addEventListener('click', () => {
+    if (segVisibles >= 3) return;
+    segVisibles++;
+    document.getElementById('segBlock' + segVisibles).style.display = 'block';
+    if (segVisibles >= 3) {
+      addSegBtn.disabled = true;
+      addSegBtn.textContent = 'Máximo 3 seguimientos';
+    }
+  });
+
+  document.querySelectorAll('.seg-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.target;
+      document.getElementById('fechaSeg' + t).value = '';
+      document.getElementById('horaSeg' + t).value = '';
+      document.getElementById('segBlock' + t).style.display = 'none';
+      segVisibles--;
+      addSegBtn.disabled = false;
+      addSegBtn.textContent = '+ Agregar otro seguimiento';
+    });
+  });
+
+  /* ───────── GUARDAR ───────── */
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Guardando...';
+
+    const payload = {
+      nombre: document.getElementById('nombre').value.trim(),
+      telefono: document.getElementById('telefono').value.trim(),
+      servicio_interes: document.getElementById('servicio').value || null,
+      estado: estadoSeleccionado,
+      fecha_proximo_seguimiento: document.getElementById('fechaSeg1').value || null,
+      hora_proximo_seguimiento: document.getElementById('horaSeg1').value || null,
+      fecha_seguimiento_2: document.getElementById('fechaSeg2').value || null,
+      hora_seguimiento_2: document.getElementById('horaSeg2').value || null,
+      fecha_seguimiento_3: document.getElementById('fechaSeg3').value || null,
+      hora_seguimiento_3: document.getElementById('horaSeg3').value || null,
+      origen: document.getElementById('origen').value,
+      notas: document.getElementById('notas').value.trim() || null
+    };
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || 'Error al guardar');
+      }
+
+      showMsg('Lead guardado correctamente.', 'success');
+      form.reset();
+      quickPaste.value = '';
+      quickFeedback.classList.remove('show');
+      document.querySelectorAll('.estado-opt').forEach(el => el.classList.remove('active'));
+      estadoGrid.querySelector('[data-val="nuevo"]').classList.add('active');
+      estadoSeleccionado = 'nuevo';
+      // resetea seguimientos extra
+      document.getElementById('segBlock2').style.display = 'none';
+      document.getElementById('segBlock3').style.display = 'none';
+      segVisibles = 1;
+      addSegBtn.disabled = false;
+      addSegBtn.textContent = '+ Agregar otro seguimiento';
+
+      if (document.getElementById('listSection').classList.contains('show')) {
+        cargarLeads();
+      }
+    } catch (err) {
+      console.error(err);
+      showMsg('Error al guardar. Intenta de nuevo.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Guardar lead';
+    }
+  });
+
+  /* ───────── LISTA ───────── */
+  const toggleListBtn = document.getElementById('toggleListBtn');
+  const listSection = document.getElementById('listSection');
+
+  toggleListBtn.addEventListener('click', () => {
+    const isShowing = listSection.classList.contains('show');
+    if (isShowing) {
+      listSection.classList.remove('show');
+      toggleListBtn.textContent = 'Ver leads registrados';
+    } else {
+      listSection.classList.add('show');
+      toggleListBtn.textContent = 'Ocultar leads';
+      cargarLeads();
+    }
+  });
+
+  async function cargarLeads() {
+    const listContent = document.getElementById('listContent');
+    listContent.innerHTML = '<div class="loading-text">Cargando...</div>';
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=30`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      if (!res.ok) throw new Error('Error al cargar');
+      const leads = await res.json();
+
+      if (leads.length === 0) {
+        listContent.innerHTML = '<div class="loading-text">No hay leads registrados aún.</div>';
+        return;
+      }
+
+      const estadoLabels = {
+        nuevo: 'Nuevo',
+        en_seguimiento: 'En seguimiento',
+        caliente: 'Caliente',
+        cerrado: 'Cerrado',
+        frio: 'Frío'
+      };
+
+      listContent.innerHTML = leads.map(lead => `
+        <div class="lead-item">
+          <div class="top">
+            <span class="nombre">${escapeHtml(lead.nombre)}</span>
+            <span class="badge ${lead.estado}">${estadoLabels[lead.estado] || lead.estado}</span>
+          </div>
+          <div class="meta">
+            ${escapeHtml(lead.telefono)}
+            ${lead.servicio_interes ? ' · ' + escapeHtml(lead.servicio_interes) : ''}
+            ${lead.fecha_proximo_seguimiento ? ' · Próx: ' + lead.fecha_proximo_seguimiento + (lead.hora_proximo_seguimiento ? ' ' + lead.hora_proximo_seguimiento.slice(0,5) : '') : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      console.error(err);
+      listContent.innerHTML = '<div class="loading-text">Error al cargar leads.</div>';
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
