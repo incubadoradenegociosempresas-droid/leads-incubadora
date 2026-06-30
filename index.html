@@ -117,6 +117,117 @@
 
   .quick-feedback.show { display: block; }
 
+  /* ── Importador CSV ── */
+  .import-card {
+    background: linear-gradient(180deg, rgba(61,220,151,0.07), rgba(61,220,151,0.02));
+    border: 1px solid rgba(61,220,151,0.25);
+  }
+
+  .import-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--success);
+  }
+
+  .import-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .drop-zone {
+    border: 2px dashed rgba(61,220,151,0.4);
+    border-radius: 8px;
+    padding: 22px 14px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--success);
+    background: rgba(61,220,151,0.06);
+    color: var(--success);
+  }
+
+  .drop-zone input { display: none; }
+
+  .import-preview {
+    margin-top: 12px;
+    display: none;
+  }
+
+  .import-preview.show { display: block; }
+
+  .import-stats {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .stat-pill.new { background: rgba(61,220,151,0.15); color: var(--success); }
+  .stat-pill.dup { background: rgba(255,200,0,0.15); color: #FFC800; }
+  .stat-pill.bad { background: rgba(255,92,92,0.15); color: var(--danger); }
+
+  .import-list {
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 0;
+    margin-bottom: 12px;
+  }
+
+  .import-row {
+    font-size: 12px;
+    padding: 7px 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .import-row:last-child { border-bottom: none; }
+  .import-row .ir-name { color: var(--text); font-weight: 600; }
+  .import-row .ir-tel { color: var(--text-dim); }
+  .import-row.dup { opacity: 0.5; }
+  .import-row .ir-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    align-self: center;
+  }
+  .import-row .ir-tag.dup { background: rgba(255,200,0,0.15); color: #FFC800; }
+
+  .import-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--success);
+    color: #07251A;
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .import-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
   .field {
     margin-bottom: 18px;
   }
@@ -318,6 +429,100 @@
 
   .lead-item .meta { color: var(--text-dim); font-size: 12px; }
 
+  /* ── Panel de gestión ── */
+  .panel-filtros {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .filtro-btn {
+    flex: 1;
+    min-width: 70px;
+    background: #11141A;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    padding: 8px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .filtro-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .panel-lead {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .panel-lead.respondio { border-color: rgba(61,220,151,0.4); background: rgba(61,220,151,0.04); }
+  .panel-lead.pausado { opacity: 0.7; }
+
+  .pl-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .pl-nombre { font-weight: 700; font-size: 14px; }
+  .pl-tel { color: var(--text-dim); font-size: 12px; }
+
+  .pl-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .pl-info b { color: var(--text); font-weight: 600; }
+
+  .pl-respondio-msg {
+    background: rgba(61,220,151,0.1);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: var(--success);
+    margin-bottom: 10px;
+  }
+
+  .pl-acciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  .pl-btn {
+    background: #11141A;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 7px;
+    padding: 8px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .pl-btn:active { opacity: 0.7; }
+  .pl-btn.warn { color: #FFC800; }
+  .pl-btn.danger { color: var(--danger); }
+  .pl-btn.ok { color: var(--success); }
+
+  .badge.respondio { background: rgba(61,220,151,0.2); color: var(--success); }
+  .badge.pausa { background: rgba(138,143,156,0.2); color: var(--text-dim); }
+
   #listSection { display: none; }
   #listSection.show { display: block; }
 
@@ -343,6 +548,21 @@
       <button type="button" class="quick-btn" id="quickBtn">Detectar</button>
     </div>
     <div class="quick-feedback" id="quickFeedback"></div>
+  </div>
+
+  <!-- 📥 IMPORTAR CSV DE WHATSAPP -->
+  <div class="card import-card">
+    <div class="import-title">📥 Importar desde WhatsApp</div>
+    <div class="import-sub">Sube el CSV que descargaste de WhatsApp Business. Reviso duplicados y los subo todos de golpe.</div>
+    <label class="drop-zone" id="dropZone">
+      <span id="dropText">Toca aquí o arrastra el archivo CSV</span>
+      <input type="file" id="csvInput" accept=".csv,text/csv">
+    </label>
+    <div class="import-preview" id="importPreview">
+      <div class="import-stats" id="importStats"></div>
+      <div class="import-list" id="importList"></div>
+      <button type="button" class="import-btn" id="importBtn">Importar leads</button>
+    </div>
   </div>
 
   <form id="leadForm" class="card">
@@ -441,10 +661,16 @@
   </form>
 
   <div class="list-toggle">
-    <button id="toggleListBtn" type="button">Ver leads registrados</button>
+    <button id="toggleListBtn" type="button">Ver panel de leads</button>
   </div>
 
   <div id="listSection" class="card">
+    <div class="panel-filtros" id="panelFiltros">
+      <button class="filtro-btn active" data-filtro="todos">Todos</button>
+      <button class="filtro-btn" data-filtro="respondio">Respondieron</button>
+      <button class="filtro-btn" data-filtro="activos">Activos</button>
+      <button class="filtro-btn" data-filtro="pausados">Pausados</button>
+    </div>
     <div id="listContent" class="loading-text">Cargando...</div>
   </div>
 
@@ -558,6 +784,179 @@
     }
   });
 
+  /* ───────── IMPORTADOR CSV ───────── */
+  const csvInput = document.getElementById('csvInput');
+  const dropZone = document.getElementById('dropZone');
+  const dropText = document.getElementById('dropText');
+  const importPreview = document.getElementById('importPreview');
+  const importStats = document.getElementById('importStats');
+  const importList = document.getElementById('importList');
+  const importBtn = document.getElementById('importBtn');
+  let leadsAImportar = [];
+
+  // Normaliza teléfono a formato con lada México (reusa lógica del pegado)
+  function limpiarTel(raw) {
+    if (!raw) return null;
+    let num = String(raw).replace(/\D/g, '');
+    if (num.length === 10) num = '52' + num;
+    else if (num.length === 13 && num.startsWith('521')) num = '52' + num.slice(3);
+    return num.length >= 12 ? num : (num.length >= 10 ? num : null);
+  }
+
+  // Parser CSV simple (maneja comillas)
+  function parseCSV(texto) {
+    const lineas = texto.split(/\r?\n/).filter(l => l.trim());
+    if (lineas.length < 2) return [];
+    const headers = lineas[0].split(',').map(h => h.trim().toLowerCase());
+    const filas = [];
+    for (let i = 1; i < lineas.length; i++) {
+      const valores = lineas[i].split(',');
+      const obj = {};
+      headers.forEach((h, idx) => {
+        obj[h] = (valores[idx] || '').trim().replace(/^"|"$/g, '');
+      });
+      filas.push(obj);
+    }
+    return filas;
+  }
+
+  ['dragover', 'dragenter'].forEach(ev =>
+    dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); })
+  );
+  ['dragleave', 'drop'].forEach(ev =>
+    dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); })
+  );
+  dropZone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) procesarArchivo(file);
+  });
+  csvInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) procesarArchivo(e.target.files[0]);
+  });
+
+  async function procesarArchivo(file) {
+    dropText.textContent = 'Leyendo ' + file.name + '...';
+    const texto = await file.text();
+    const filas = parseCSV(texto);
+
+    if (!filas.length) {
+      dropText.textContent = 'No pude leer filas. ¿Es un CSV válido?';
+      return;
+    }
+
+    // 1. Traer teléfonos existentes en Supabase para detectar duplicados
+    let existentes = new Set();
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=telefono`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        data.forEach(r => existentes.add(limpiarTel(r.telefono)));
+      }
+    } catch (err) { console.warn('No pude verificar duplicados', err); }
+
+    // 2. Mapear y clasificar
+    leadsAImportar = [];
+    let nuevos = 0, dups = 0, malos = 0;
+    const vistos = new Set();
+
+    filas.forEach(f => {
+      const nombre = f.nombre || f['nombre del cliente'] || '';
+      const telLimpio = limpiarTel(f.telefono || f['teléfono'] || f.tel);
+      if (!telLimpio) { malos++; return; }
+
+      const esDup = existentes.has(telLimpio) || vistos.has(telLimpio);
+      vistos.add(telLimpio);
+
+      const lead = {
+        nombre: nombre || 'Sin nombre',
+        telefono: telLimpio,
+        servicio_interes: f.servicio_interes || f['qué producto o servicio'] || f.servicio || null,
+        estado: 'nuevo',
+        origen: 'WhatsApp',
+        seguimientos_enviados: 0,
+        _dup: esDup
+      };
+      leadsAImportar.push(lead);
+      if (esDup) dups++; else nuevos++;
+    });
+
+    // 2b. Reparto escalonado del primer toque: máx 15 leads nuevos por día
+    const POR_DIA = 15;
+    let contadorNuevos = 0;
+    leadsAImportar.forEach(l => {
+      if (l._dup) return;
+      const diaOffset = Math.floor(contadorNuevos / POR_DIA) + 1; // +1 = a partir de mañana
+      const fecha = new Date();
+      fecha.setDate(fecha.getDate() + diaOffset);
+      l.fecha_proximo_seguimiento = fecha.toISOString().slice(0, 10); // YYYY-MM-DD
+      contadorNuevos++;
+    });
+
+    // 3. Preview
+    const diasNecesarios = Math.ceil(nuevos / POR_DIA);
+    importStats.innerHTML =
+      `<span class="stat-pill new">${nuevos} nuevos</span>` +
+      (dups ? `<span class="stat-pill dup">${dups} duplicados (se omiten)</span>` : '') +
+      (malos ? `<span class="stat-pill bad">${malos} sin teléfono</span>` : '') +
+      (diasNecesarios > 1 ? `<span class="stat-pill dup">repartidos en ${diasNecesarios} días (15/día)</span>` : '');
+
+    importList.innerHTML = leadsAImportar.map(l => `
+      <div class="import-row ${l._dup ? 'dup' : ''}">
+        <span class="ir-name">${escapeHtml(l.nombre)}</span>
+        <span class="ir-tel">${escapeHtml(l.telefono)}${l._dup ? '' : (l.fecha_proximo_seguimiento ? ' · 1er toque: ' + l.fecha_proximo_seguimiento.slice(5) : '')}</span>
+        ${l._dup ? '<span class="ir-tag dup">ya existe</span>' : ''}
+      </div>
+    `).join('');
+
+    dropText.textContent = file.name + ' ✓ (toca para cambiar)';
+    importPreview.classList.add('show');
+    importBtn.textContent = nuevos ? `Importar ${nuevos} leads` : 'No hay leads nuevos';
+    importBtn.disabled = nuevos === 0;
+  }
+
+  importBtn.addEventListener('click', async () => {
+    const aSubir = leadsAImportar
+      .filter(l => !l._dup)
+      .map(({ _dup, ...lead }) => lead);
+
+    if (!aSubir.length) return;
+
+    importBtn.disabled = true;
+    importBtn.textContent = 'Importando...';
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(aSubir)  // array = inserción masiva
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText);
+      }
+
+      showMsg(`${aSubir.length} leads importados correctamente.`, 'success');
+      importPreview.classList.remove('show');
+      dropText.textContent = 'Toca aquí o arrastra el archivo CSV';
+      csvInput.value = '';
+      leadsAImportar = [];
+      if (document.getElementById('listSection').classList.contains('show')) cargarLeads();
+    } catch (err) {
+      console.error(err);
+      showMsg('Error al importar. Revisa el formato del CSV.', 'error');
+      importBtn.disabled = false;
+      importBtn.textContent = 'Importar leads';
+    }
+  });
+
   /* ───────── SEGUIMIENTOS ───────── */
   const addSegBtn = document.getElementById('addSegBtn');
   let segVisibles = 1;
@@ -648,70 +1047,192 @@
     }
   });
 
-  /* ───────── LISTA ───────── */
+  /* ───────── PANEL DE GESTIÓN ───────── */
   const toggleListBtn = document.getElementById('toggleListBtn');
   const listSection = document.getElementById('listSection');
+  let filtroActual = 'todos';
+  let todosLosLeads = [];
 
   toggleListBtn.addEventListener('click', () => {
     const isShowing = listSection.classList.contains('show');
     if (isShowing) {
       listSection.classList.remove('show');
-      toggleListBtn.textContent = 'Ver leads registrados';
+      toggleListBtn.textContent = 'Ver panel de leads';
     } else {
       listSection.classList.add('show');
-      toggleListBtn.textContent = 'Ocultar leads';
+      toggleListBtn.textContent = 'Ocultar panel';
       cargarLeads();
     }
   });
+
+  // Filtros
+  document.getElementById('panelFiltros').addEventListener('click', (e) => {
+    const btn = e.target.closest('.filtro-btn');
+    if (!btn) return;
+    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filtroActual = btn.dataset.filtro;
+    renderLeads();
+  });
+
+  const estadoLabels = {
+    nuevo: 'Nuevo', en_seguimiento: 'En seguimiento', caliente: 'Caliente',
+    cerrado: 'Cerrado', frio: 'Frío', respondio: 'Respondió'
+  };
 
   async function cargarLeads() {
     const listContent = document.getElementById('listContent');
     listContent.innerHTML = '<div class="loading-text">Cargando...</div>';
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=30`, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=200`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
       });
       if (!res.ok) throw new Error('Error al cargar');
-      const leads = await res.json();
-
-      if (leads.length === 0) {
-        listContent.innerHTML = '<div class="loading-text">No hay leads registrados aún.</div>';
-        return;
-      }
-
-      const estadoLabels = {
-        nuevo: 'Nuevo',
-        en_seguimiento: 'En seguimiento',
-        caliente: 'Caliente',
-        cerrado: 'Cerrado',
-        frio: 'Frío'
-      };
-
-      listContent.innerHTML = leads.map(lead => `
-        <div class="lead-item">
-          <div class="top">
-            <span class="nombre">${escapeHtml(lead.nombre)}</span>
-            <span class="badge ${lead.estado}">${estadoLabels[lead.estado] || lead.estado}</span>
-          </div>
-          <div class="meta">
-            ${escapeHtml(lead.telefono)}
-            ${lead.servicio_interes ? ' · ' + escapeHtml(lead.servicio_interes) : ''}
-            ${lead.fecha_proximo_seguimiento ? ' · Próx: ' + lead.fecha_proximo_seguimiento + (lead.hora_proximo_seguimiento ? ' ' + lead.hora_proximo_seguimiento.slice(0,5) : '') : ''}
-          </div>
-        </div>
-      `).join('');
+      todosLosLeads = await res.json();
+      renderLeads();
     } catch (err) {
       console.error(err);
       listContent.innerHTML = '<div class="loading-text">Error al cargar leads.</div>';
     }
   }
 
+  function renderLeads() {
+    const listContent = document.getElementById('listContent');
+    let leads = todosLosLeads;
+
+    if (filtroActual === 'respondio') leads = leads.filter(l => l.estado === 'respondio' || l.ultima_respuesta);
+    else if (filtroActual === 'activos') leads = leads.filter(l => l.estado !== 'respondio' && l.estado !== 'cerrado' && !l.seguimiento_pausado);
+    else if (filtroActual === 'pausados') leads = leads.filter(l => l.seguimiento_pausado);
+
+    if (!leads.length) {
+      listContent.innerHTML = '<div class="loading-text">No hay leads en esta vista.</div>';
+      return;
+    }
+
+    listContent.innerHTML = leads.map(lead => {
+      const respondio = lead.estado === 'respondio' || lead.ultima_respuesta;
+      const pausado = lead.seguimiento_pausado;
+      const fechaEnvio = lead.fecha_ultimo_contacto
+        ? new Date(lead.fecha_ultimo_contacto).toLocaleDateString('es-MX', {day:'2-digit', month:'short'})
+        : '—';
+      const proxToque = lead.fecha_proximo_seguimiento
+        ? lead.fecha_proximo_seguimiento.slice(5) + (lead.hora_proximo_seguimiento ? ' ' + lead.hora_proximo_seguimiento.slice(0,5) : '')
+        : '—';
+
+      let badge = `<span class="badge ${lead.estado}">${estadoLabels[lead.estado] || lead.estado}</span>`;
+      if (pausado) badge += ' <span class="badge pausa">⏸ Pausado</span>';
+
+      return `
+        <div class="panel-lead ${respondio ? 'respondio' : ''} ${pausado ? 'pausado' : ''}">
+          <div class="pl-top">
+            <div>
+              <div class="pl-nombre">${escapeHtml(lead.nombre)}</div>
+              <div class="pl-tel">${escapeHtml(lead.telefono)}${lead.servicio_interes ? ' · ' + escapeHtml(lead.servicio_interes) : ''}</div>
+            </div>
+            <div style="text-align:right;">${badge}</div>
+          </div>
+          <div class="pl-info">
+            <span>Seguimientos: <b>${lead.seguimientos_enviados ?? 0}</b></span>
+            <span>Últ. envío: <b>${fechaEnvio}</b></span>
+            <span>Próx: <b>${proxToque}</b></span>
+          </div>
+          ${respondio && lead.ultima_respuesta ? `<div class="pl-respondio-msg">💬 "${escapeHtml(lead.ultima_respuesta)}"</div>` : ''}
+          <div class="pl-acciones">
+            <button class="pl-btn warn" data-accion="reiniciar" data-id="${lead.id}">🔄 Reiniciar</button>
+            <button class="pl-btn" data-accion="pausar" data-id="${lead.id}" data-pausado="${pausado}">${pausado ? '▶️ Reanudar' : '⏸ Pausar'}</button>
+            <button class="pl-btn" data-accion="estado" data-id="${lead.id}">✏️ Estado</button>
+            <button class="pl-btn" data-accion="fecha" data-id="${lead.id}">📅 Fecha</button>
+            <button class="pl-btn ok" data-accion="cerrar" data-id="${lead.id}">✅ Cerrar</button>
+            <button class="pl-btn danger" data-accion="borrar" data-id="${lead.id}">🗑 Borrar</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Acciones del panel (event delegation)
+  document.getElementById('listContent').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.pl-btn');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const accion = btn.dataset.accion;
+    const lead = todosLosLeads.find(l => l.id === id);
+    if (!lead) return;
+
+    let patch = null;
+    let confirmar = null;
+
+    if (accion === 'reiniciar') {
+      if (lead.estado === 'respondio') {
+        if (!confirm(`${lead.nombre} ya respondió. ¿Seguro que quieres reiniciar la cadencia y volver a mandarle seguimientos?`)) return;
+      } else {
+        if (!confirm(`¿Reiniciar la cadencia de ${lead.nombre}? Vuelve a 0 seguimientos y el próximo toque será mañana.`)) return;
+      }
+      const manana = new Date(); manana.setDate(manana.getDate() + 1);
+      patch = {
+        seguimientos_enviados: 0,
+        fecha_proximo_seguimiento: manana.toISOString().slice(0,10),
+        estado: 'nuevo',
+        seguimiento_pausado: false
+      };
+    }
+    else if (accion === 'pausar') {
+      patch = { seguimiento_pausado: !lead.seguimiento_pausado };
+    }
+    else if (accion === 'estado') {
+      const nuevo = prompt('Nuevo estado (nuevo, en_seguimiento, caliente, frio, cerrado, respondio):', lead.estado);
+      if (!nuevo) return;
+      const validos = ['nuevo','en_seguimiento','caliente','frio','cerrado','respondio'];
+      if (!validos.includes(nuevo.trim())) { showMsg('Estado no válido.', 'error'); return; }
+      patch = { estado: nuevo.trim() };
+    }
+    else if (accion === 'fecha') {
+      const nueva = prompt('Nueva fecha del próximo seguimiento (AAAA-MM-DD):', lead.fecha_proximo_seguimiento || '');
+      if (!nueva) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(nueva.trim())) { showMsg('Formato inválido. Usa AAAA-MM-DD.', 'error'); return; }
+      patch = { fecha_proximo_seguimiento: nueva.trim() };
+    }
+    else if (accion === 'cerrar') {
+      if (!confirm(`¿Marcar a ${lead.nombre} como CERRADO? Deja de recibir seguimientos.`)) return;
+      patch = { estado: 'cerrado', seguimiento_pausado: true };
+    }
+    else if (accion === 'borrar') {
+      if (!confirm(`¿BORRAR a ${lead.nombre} permanentemente? Esto no se puede deshacer.`)) return;
+      // DELETE
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?id=eq.${id}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showMsg('Lead borrado.', 'success');
+        cargarLeads();
+      } catch (err) { console.error(err); showMsg('Error al borrar.', 'error'); }
+      return;
+    }
+
+    if (patch) {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(patch)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showMsg('Lead actualizado.', 'success');
+        cargarLeads();
+      } catch (err) { console.error(err); showMsg('Error al actualizar.', 'error'); }
+    }
+  });
+
   function escapeHtml(str) {
     const div = document.createElement('div');
-    div.textContent = str;
+    div.textContent = str == null ? '' : str;
     return div.innerHTML;
   }
 </script>
