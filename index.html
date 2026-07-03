@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registrar Lead — Incubadora</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #0F1115;
@@ -59,6 +60,87 @@
     border-radius: var(--radius);
     padding: 20px;
     margin-bottom: 16px;
+  }
+
+  /* ── Login ── */
+  #loginScreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+  }
+
+  .login-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 22px;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .login-card .label {
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .login-card h2 {
+    font-size: 20px;
+    margin: 0 0 20px;
+    font-weight: 700;
+  }
+
+  .login-card .field { margin-bottom: 16px; }
+
+  .login-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #1A0E05;
+    font-weight: 700;
+    font-size: 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  .login-btn:active { opacity: 0.85; }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .login-error {
+    color: var(--danger);
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .login-error.show { display: block; }
+
+  #appScreen { display: none; }
+  #appScreen.show { display: block; }
+
+  .logout-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .logout-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
   }
 
   /* ── Pegado rápido ── */
@@ -249,6 +331,8 @@
 
   input[type="text"],
   input[type="tel"],
+  input[type="email"],
+  input[type="password"],
   input[type="date"],
   input[type="time"],
   select,
@@ -530,7 +614,33 @@
 </style>
 </head>
 <body>
+
+<!-- ══════ PANTALLA DE LOGIN ══════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="label">Incubadora de Negocios</div>
+    <h2>Iniciar sesión</h2>
+    <div class="field">
+      <label for="loginEmail">Correo</label>
+      <input type="email" id="loginEmail" placeholder="tu@correo.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="loginPass">Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="loginBtn">Entrar</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ══════ APP (protegida) ══════ -->
+<div id="appScreen">
 <div class="wrap">
+
+  <div class="logout-bar">
+    <span id="userEmail"></span>
+    <button class="logout-btn" id="logoutBtn">Cerrar sesión</button>
+  </div>
 
   <header>
     <div class="label">Incubadora de Negocios</div>
@@ -675,11 +785,84 @@
   </div>
 
 </div>
+</div>
 
 <script>
   const SUPABASE_URL = "https://ytxnmscxyjttqftmznqj.supabase.co";
   const SUPABASE_KEY = "sb_publishable_T3LJo-8teMIkimAtHitGWA_XKjzDBP5";
 
+  // Cliente de Supabase (maneja auth + sesión)
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Devuelve los headers con el token de sesión del usuario logueado.
+  // Esto es lo que hace que las policies te reconozcan como "authenticated".
+  async function authHeaders(extra = {}) {
+    const { data } = await sb.auth.getSession();
+    const token = data.session ? data.session.access_token : SUPABASE_KEY;
+    return {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${token}`,
+      ...extra
+    };
+  }
+
+  /* ═══════════ LOGIN / SESIÓN ═══════════ */
+  const loginScreen = document.getElementById('loginScreen');
+  const appScreen = document.getElementById('appScreen');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginEmail = document.getElementById('loginEmail');
+  const loginPass = document.getElementById('loginPass');
+  const loginError = document.getElementById('loginError');
+  const userEmail = document.getElementById('userEmail');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  async function checkSession() {
+    const { data } = await sb.auth.getSession();
+    if (data.session) {
+      loginScreen.style.display = 'none';
+      appScreen.classList.add('show');
+      userEmail.textContent = data.session.user.email;
+    } else {
+      loginScreen.style.display = 'flex';
+      appScreen.classList.remove('show');
+    }
+  }
+
+  loginBtn.addEventListener('click', async () => {
+    loginError.classList.remove('show');
+    const email = loginEmail.value.trim();
+    const pass = loginPass.value;
+    if (!email || !pass) {
+      loginError.textContent = 'Escribe correo y contraseña.';
+      loginError.classList.add('show');
+      return;
+    }
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Entrando...';
+    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Entrar';
+    if (error) {
+      loginError.textContent = 'Correo o contraseña incorrectos.';
+      loginError.classList.add('show');
+      return;
+    }
+    loginPass.value = '';
+    await checkSession();
+  });
+
+  // Permite login con Enter
+  loginPass.addEventListener('keydown', (e) => { if (e.key === 'Enter') loginBtn.click(); });
+
+  logoutBtn.addEventListener('click', async () => {
+    await sb.auth.signOut();
+    await checkSession();
+  });
+
+  // Al cargar la página, revisa si ya hay sesión activa
+  checkSession();
+
+  /* ═══════════ APP ═══════════ */
   const form = document.getElementById('leadForm');
   const msgBox = document.getElementById('msgBox');
   const submitBtn = document.getElementById('submitBtn');
@@ -706,40 +889,29 @@
   const quickFeedback = document.getElementById('quickFeedback');
 
   function detectarTelefono(texto) {
-    // Quita todo lo que no sea dígito para analizar
     const soloDigitos = texto.replace(/[^\d]/g, '');
-    // Busca secuencias de dígitos en el texto original (tolerando espacios, guiones, +, paréntesis)
     const matches = texto.match(/(\+?\d[\d\s\-\(\)]{8,}\d)/g);
     if (!matches) return null;
-
-    // Toma el match más largo (suele ser el teléfono completo)
     let mejor = matches.sort((a, b) => b.replace(/\D/g,'').length - a.replace(/\D/g,'').length)[0];
     let num = mejor.replace(/\D/g, '');
-
-    // Normaliza a formato con lada México
     if (num.length === 10) {
-      num = '52' + num;          // 10 dígitos -> agrega 52
+      num = '52' + num;
     } else if (num.length === 12 && num.startsWith('52')) {
       // ya está bien
     } else if (num.length === 13 && num.startsWith('521')) {
-      num = '52' + num.slice(3); // quita el 1 viejo de WhatsApp
+      num = '52' + num.slice(3);
     }
     return num.length >= 10 ? num : null;
   }
 
   function detectarNombre(texto) {
-    // Quita números y símbolos comunes, busca palabras tipo nombre
     let limpio = texto
-      .replace(/(\+?\d[\d\s\-\(\)]{6,}\d)/g, ' ')  // quita teléfonos
-      .replace(/[^\p{L}\s]/gu, ' ')                 // quita símbolos, deja letras
+      .replace(/(\+?\d[\d\s\-\(\)]{6,}\d)/g, ' ')
+      .replace(/[^\p{L}\s]/gu, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-
-    // Patrones comunes: "soy Carlos", "me llamo Ana", "habla Pedro"
     const m = limpio.match(/(?:soy|me llamo|habla|aqui|aquí)\s+([\p{Lu}][\p{L}]+(?:\s+[\p{Lu}]?[\p{L}]+){0,2})/iu);
     if (m) return m[1].trim();
-
-    // Si no, toma las primeras 2 palabras capitalizadas seguidas
     const palabras = limpio.split(' ').filter(w => w.length > 1);
     const capit = palabras.filter(w => /^[\p{Lu}]/u.test(w));
     if (capit.length >= 2) return capit.slice(0, 2).join(' ');
@@ -755,25 +927,15 @@
       quickFeedback.classList.add('show');
       return;
     }
-
     const tel = detectarTelefono(texto);
     const nombre = detectarNombre(texto);
     let detectado = [];
-
-    if (tel) {
-      document.getElementById('telefono').value = tel;
-      detectado.push('teléfono');
-    }
-    if (nombre) {
-      document.getElementById('nombre').value = nombre;
-      detectado.push('nombre');
-    }
-    // Guarda el texto original en notas como contexto
+    if (tel) { document.getElementById('telefono').value = tel; detectado.push('teléfono'); }
+    if (nombre) { document.getElementById('nombre').value = nombre; detectado.push('nombre'); }
     if (texto.length > 5) {
       const notas = document.getElementById('notas');
       if (!notas.value.trim()) notas.value = texto;
     }
-
     quickFeedback.classList.add('show');
     if (detectado.length) {
       quickFeedback.style.color = 'var(--success)';
@@ -794,23 +956,19 @@
   const importBtn = document.getElementById('importBtn');
   let leadsAImportar = [];
 
-  // Normaliza teléfono a formato con lada México (reusa lógica del pegado)
+  const POR_DIA = 30;   // total de leads que sale por día (3 turnos x 10)
+
   function limpiarTel(raw) {
     if (!raw) return null;
     let num = String(raw).replace(/\D/g, '');
-    // 10 dígitos (nacional sin lada país) -> agrega 52
     if (num.length === 10) num = '52' + num;
-    // 12 dígitos empezando con 52 -> ya está correcto (52 + 10 dígitos)
-    // 13 dígitos empezando con 521 -> formato viejo de WhatsApp (52 + 1 + 10), quita el 1
     else if (num.length === 13 && num.startsWith('521')) num = '52' + num.slice(3);
     return num.length >= 11 ? num : null;
   }
 
-  // Parser CSV robusto (maneja comillas y comas dentro de campos)
   function parseCSV(texto) {
     const lineas = texto.split(/\r?\n/).filter(l => l.trim());
     if (lineas.length < 2) return [];
-
     function parseLinea(linea) {
       const campos = [];
       let actual = '';
@@ -829,15 +987,12 @@
       campos.push(actual);
       return campos;
     }
-
     const headers = parseLinea(lineas[0]).map(h => h.trim().toLowerCase());
     const filas = [];
     for (let i = 1; i < lineas.length; i++) {
       const valores = parseLinea(lineas[i]);
       const obj = {};
-      headers.forEach((h, idx) => {
-        obj[h] = (valores[idx] || '').trim();
-      });
+      headers.forEach((h, idx) => { obj[h] = (valores[idx] || '').trim(); });
       filas.push(obj);
     }
     return filas;
@@ -857,6 +1012,20 @@
     if (e.target.files[0]) procesarArchivo(e.target.files[0]);
   });
 
+  // Devuelve fecha (YYYY-MM-DD) y hora (HH:MM:SS) segun el índice global del lead nuevo.
+  // Reparte 30/día en 3 turnos: 0-9 -> 09:00, 10-19 -> 14:30, 20-29 -> 19:00
+  function slotDeLead(indiceGlobal) {
+    const diaOffset = Math.floor(indiceGlobal / POR_DIA) + 1; // +1 = a partir de mañana
+    const pos = indiceGlobal % POR_DIA;
+    let hora;
+    if (pos < 10) hora = '09:00:00';
+    else if (pos < 20) hora = '14:30:00';
+    else hora = '19:00:00';
+    const fecha = new Date();
+    fecha.setDate(fecha.getDate() + diaOffset);
+    return { fecha: fecha.toISOString().slice(0, 10), hora };
+  }
+
   async function procesarArchivo(file) {
     dropText.textContent = 'Leyendo ' + file.name + '...';
     const texto = await file.text();
@@ -867,17 +1036,26 @@
       return;
     }
 
-    // 1. Traer teléfonos existentes en Supabase para detectar duplicados
+    // 1. Traer teléfonos existentes (para duplicados) + contar cuántos leads ya
+    //    están programados por día, para NO encimar sobre la cola actual.
     let existentes = new Set();
+    let cargaPorDia = {}; // { 'YYYY-MM-DD': cantidad }
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=telefono`, {
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=telefono,fecha_proximo_seguimiento,estado,seguimiento_pausado`, {
+        headers: await authHeaders()
       });
       if (res.ok) {
         const data = await res.json();
-        data.forEach(r => existentes.add(limpiarTel(r.telefono)));
+        data.forEach(r => {
+          existentes.add(limpiarTel(r.telefono));
+          // solo cuentan los que siguen en cola de envío
+          if (r.estado === 'nuevo' && !r.seguimiento_pausado && r.fecha_proximo_seguimiento) {
+            const d = r.fecha_proximo_seguimiento.slice(0,10);
+            cargaPorDia[d] = (cargaPorDia[d] || 0) + 1;
+          }
+        });
       }
-    } catch (err) { console.warn('No pude verificar duplicados', err); }
+    } catch (err) { console.warn('No pude verificar duplicados/carga', err); }
 
     // 2. Mapear y clasificar
     leadsAImportar = [];
@@ -888,10 +1066,8 @@
       const nombre = f.nombre || f['nombre del cliente'] || '';
       const telLimpio = limpiarTel(f.telefono || f['teléfono'] || f.tel || f['whatsapp id'] || f['whatsapp_id'] || f.wa_id);
       if (!telLimpio) { malos++; return; }
-
       const esDup = existentes.has(telLimpio) || vistos.has(telLimpio);
       vistos.add(telLimpio);
-
       const lead = {
         nombre: nombre || 'Sin nombre',
         telefono: telLimpio,
@@ -905,30 +1081,52 @@
       if (esDup) dups++; else nuevos++;
     });
 
-    // 2b. Reparto escalonado del primer toque: máx 15 leads nuevos por día
-    const POR_DIA = 15;
-    let contadorNuevos = 0;
+    // 2b. Reparto REAL con tope diario que respeta lo que ya hay en cola.
+    //     Busca el primer slot libre día por día, arrancando mañana.
+    let cursorDia = 1;
+    function huecosEnDia(fechaStr) {
+      return POR_DIA - (cargaPorDia[fechaStr] || 0);
+    }
+    function fechaOffset(off) {
+      const d = new Date(); d.setDate(d.getDate() + off);
+      return d.toISOString().slice(0,10);
+    }
+    let posEnDia = 0; // posición dentro del día actual (para asignar turno)
+    // avanza cursor hasta un día con hueco
+    while (huecosEnDia(fechaOffset(cursorDia)) <= 0) cursorDia++;
+    posEnDia = POR_DIA - huecosEnDia(fechaOffset(cursorDia)); // arranca donde quedó la carga previa
+
     leadsAImportar.forEach(l => {
       if (l._dup) return;
-      const diaOffset = Math.floor(contadorNuevos / POR_DIA) + 1; // +1 = a partir de mañana
-      const fecha = new Date();
-      fecha.setDate(fecha.getDate() + diaOffset);
-      l.fecha_proximo_seguimiento = fecha.toISOString().slice(0, 10); // YYYY-MM-DD
-      contadorNuevos++;
+      // si el día actual se llenó, salta al siguiente con hueco
+      while (posEnDia >= POR_DIA || huecosEnDia(fechaOffset(cursorDia)) <= 0) {
+        cursorDia++;
+        while (huecosEnDia(fechaOffset(cursorDia)) <= 0) cursorDia++;
+        posEnDia = POR_DIA - huecosEnDia(fechaOffset(cursorDia));
+      }
+      const fechaStr = fechaOffset(cursorDia);
+      let hora;
+      if (posEnDia < 10) hora = '09:00:00';
+      else if (posEnDia < 20) hora = '14:30:00';
+      else hora = '19:00:00';
+      l.fecha_proximo_seguimiento = fechaStr;
+      l.hora_proximo_seguimiento = hora;
+      cargaPorDia[fechaStr] = (cargaPorDia[fechaStr] || 0) + 1;
+      posEnDia++;
     });
 
     // 3. Preview
-    const diasNecesarios = Math.ceil(nuevos / POR_DIA);
+    const diasNecesarios = Math.max(1, Math.ceil(nuevos / POR_DIA));
     importStats.innerHTML =
       `<span class="stat-pill new">${nuevos} nuevos</span>` +
       (dups ? `<span class="stat-pill dup">${dups} duplicados (se omiten)</span>` : '') +
       (malos ? `<span class="stat-pill bad">${malos} sin teléfono</span>` : '') +
-      (diasNecesarios > 1 ? `<span class="stat-pill dup">repartidos en ${diasNecesarios} días (15/día)</span>` : '');
+      (diasNecesarios > 1 ? `<span class="stat-pill dup">repartidos en ~${diasNecesarios} días (30/día · 3 turnos)</span>` : '');
 
     importList.innerHTML = leadsAImportar.map(l => `
       <div class="import-row ${l._dup ? 'dup' : ''}">
         <span class="ir-name">${escapeHtml(l.nombre)}</span>
-        <span class="ir-tel">${escapeHtml(l.telefono)}${l._dup ? '' : (l.fecha_proximo_seguimiento ? ' · 1er toque: ' + l.fecha_proximo_seguimiento.slice(5) : '')}</span>
+        <span class="ir-tel">${escapeHtml(l.telefono)}${l._dup ? '' : (l.fecha_proximo_seguimiento ? ' · ' + l.fecha_proximo_seguimiento.slice(5) + ' ' + l.hora_proximo_seguimiento.slice(0,5) : '')}</span>
         ${l._dup ? '<span class="ir-tag dup">ya existe</span>' : ''}
       </div>
     `).join('');
@@ -943,29 +1141,16 @@
     const aSubir = leadsAImportar
       .filter(l => !l._dup)
       .map(({ _dup, ...lead }) => lead);
-
     if (!aSubir.length) return;
-
     importBtn.disabled = true;
     importBtn.textContent = 'Importando...';
-
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(aSubir)  // array = inserción masiva
+        headers: await authHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(aSubir)
       });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText);
-      }
-
+      if (!res.ok) { throw new Error(await res.text()); }
       showMsg(`${aSubir.length} leads importados correctamente.`, 'success');
       importPreview.classList.remove('show');
       dropText.textContent = 'Toca aquí o arrastra el archivo CSV';
@@ -1030,19 +1215,10 @@
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Prefer': 'return=minimal'
-        },
+        headers: await authHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
         body: JSON.stringify(payload)
       });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || 'Error al guardar');
-      }
+      if (!res.ok) { throw new Error(await res.text() || 'Error al guardar'); }
 
       showMsg('Lead guardado correctamente.', 'success');
       form.reset();
@@ -1051,16 +1227,12 @@
       document.querySelectorAll('.estado-opt').forEach(el => el.classList.remove('active'));
       estadoGrid.querySelector('[data-val="nuevo"]').classList.add('active');
       estadoSeleccionado = 'nuevo';
-      // resetea seguimientos extra
       document.getElementById('segBlock2').style.display = 'none';
       document.getElementById('segBlock3').style.display = 'none';
       segVisibles = 1;
       addSegBtn.disabled = false;
       addSegBtn.textContent = '+ Agregar otro seguimiento';
-
-      if (document.getElementById('listSection').classList.contains('show')) {
-        cargarLeads();
-      }
+      if (document.getElementById('listSection').classList.contains('show')) cargarLeads();
     } catch (err) {
       console.error(err);
       showMsg('Error al guardar. Intenta de nuevo.', 'error');
@@ -1088,7 +1260,6 @@
     }
   });
 
-  // Filtros
   document.getElementById('panelFiltros').addEventListener('click', (e) => {
     const btn = e.target.closest('.filtro-btn');
     if (!btn) return;
@@ -1108,7 +1279,7 @@
     listContent.innerHTML = '<div class="loading-text">Cargando...</div>';
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=200`, {
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        headers: await authHeaders()
       });
       if (!res.ok) throw new Error('Error al cargar');
       todosLosLeads = await res.json();
@@ -1122,7 +1293,6 @@
   function renderLeads() {
     const listContent = document.getElementById('listContent');
     let leads = todosLosLeads;
-
     if (filtroActual === 'respondio') leads = leads.filter(l => l.estado === 'respondio' || l.ultima_respuesta);
     else if (filtroActual === 'activos') leads = leads.filter(l => l.estado !== 'respondio' && l.estado !== 'cerrado' && !l.seguimiento_pausado);
     else if (filtroActual === 'pausados') leads = leads.filter(l => l.seguimiento_pausado);
@@ -1141,10 +1311,8 @@
       const proxToque = lead.fecha_proximo_seguimiento
         ? lead.fecha_proximo_seguimiento.slice(5) + (lead.hora_proximo_seguimiento ? ' ' + lead.hora_proximo_seguimiento.slice(0,5) : '')
         : '—';
-
       let badge = `<span class="badge ${lead.estado}">${estadoLabels[lead.estado] || lead.estado}</span>`;
       if (pausado) badge += ' <span class="badge pausa">⏸ Pausado</span>';
-
       return `
         <div class="panel-lead ${respondio ? 'respondio' : ''} ${pausado ? 'pausado' : ''}">
           <div class="pl-top">
@@ -1173,7 +1341,6 @@
     }).join('');
   }
 
-  // Acciones del panel (event delegation)
   document.getElementById('listContent').addEventListener('click', async (e) => {
     const btn = e.target.closest('.pl-btn');
     if (!btn) return;
@@ -1183,7 +1350,6 @@
     if (!lead) return;
 
     let patch = null;
-    let confirmar = null;
 
     if (accion === 'reiniciar') {
       if (lead.estado === 'respondio') {
@@ -1192,12 +1358,7 @@
         if (!confirm(`¿Reiniciar la cadencia de ${lead.nombre}? Vuelve a 0 seguimientos y el próximo toque será mañana.`)) return;
       }
       const manana = new Date(); manana.setDate(manana.getDate() + 1);
-      patch = {
-        seguimientos_enviados: 0,
-        fecha_proximo_seguimiento: manana.toISOString().slice(0,10),
-        estado: 'nuevo',
-        seguimiento_pausado: false
-      };
+      patch = { seguimientos_enviados: 0, fecha_proximo_seguimiento: manana.toISOString().slice(0,10), estado: 'nuevo', seguimiento_pausado: false };
     }
     else if (accion === 'pausar') {
       patch = { seguimiento_pausado: !lead.seguimiento_pausado };
@@ -1221,11 +1382,10 @@
     }
     else if (accion === 'borrar') {
       if (!confirm(`¿BORRAR a ${lead.nombre} permanentemente? Esto no se puede deshacer.`)) return;
-      // DELETE
       try {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?id=eq.${id}`, {
           method: 'DELETE',
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+          headers: await authHeaders()
         });
         if (!res.ok) throw new Error(await res.text());
         showMsg('Lead borrado.', 'success');
@@ -1238,12 +1398,7 @@
       try {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?id=eq.${id}`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Prefer': 'return=minimal'
-          },
+          headers: await authHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
           body: JSON.stringify(patch)
         });
         if (!res.ok) throw new Error(await res.text());
