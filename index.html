@@ -607,6 +607,26 @@
   .badge.respondio { background: rgba(61,220,151,0.2); color: var(--success); }
   .badge.pausa { background: rgba(138,143,156,0.2); color: var(--text-dim); }
 
+  .orden-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .orden-wrap select {
+    flex: 1;
+    background: #11141A;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
   #listSection { display: none; }
   #listSection.show { display: block; }
 
@@ -780,6 +800,15 @@
       <button class="filtro-btn" data-filtro="respondio">Respondieron</button>
       <button class="filtro-btn" data-filtro="activos">Activos</button>
       <button class="filtro-btn" data-filtro="pausados">Pausados</button>
+    </div>
+    <div class="orden-wrap">
+      <label for="ordenSelect">Ordenar por:</label>
+      <select id="ordenSelect">
+        <option value="proximo">Próximo seguimiento (más urgente)</option>
+        <option value="ultimo_contacto">Último contacto (más antiguo)</option>
+        <option value="registro">Fecha de registro (más nuevo)</option>
+        <option value="nombre">Nombre (A-Z)</option>
+      </select>
     </div>
     <div id="listContent" class="loading-text">Cargando...</div>
   </div>
@@ -1255,6 +1284,7 @@
   const toggleListBtn = document.getElementById('toggleListBtn');
   const listSection = document.getElementById('listSection');
   let filtroActual = 'todos';
+  let ordenActual = 'proximo';
   let todosLosLeads = [];
 
   toggleListBtn.addEventListener('click', () => {
@@ -1278,6 +1308,38 @@
     renderLeads();
   });
 
+  document.getElementById('ordenSelect').addEventListener('change', (e) => {
+    ordenActual = e.target.value;
+    renderLeads();
+  });
+
+  // Convierte fecha_proximo_seguimiento + hora_proximo_seguimiento a timestamp comparable.
+  // Sin fecha -> se manda al final (Infinity), sea cual sea el orden.
+  function timestampProximo(lead) {
+    if (!lead.fecha_proximo_seguimiento) return Infinity;
+    const hora = lead.hora_proximo_seguimiento || '00:00:00';
+    return new Date(`${lead.fecha_proximo_seguimiento}T${hora}`).getTime();
+  }
+
+  function timestampUltimoContacto(lead) {
+    if (!lead.fecha_ultimo_contacto) return Infinity;
+    return new Date(lead.fecha_ultimo_contacto).getTime();
+  }
+
+  function ordenarLeads(leads) {
+    const copia = [...leads];
+    if (ordenActual === 'proximo') {
+      copia.sort((a, b) => timestampProximo(a) - timestampProximo(b));
+    } else if (ordenActual === 'ultimo_contacto') {
+      copia.sort((a, b) => timestampUltimoContacto(a) - timestampUltimoContacto(b));
+    } else if (ordenActual === 'registro') {
+      copia.sort((a, b) => new Date(b.fecha_registro).getTime() - new Date(a.fecha_registro).getTime());
+    } else if (ordenActual === 'nombre') {
+      copia.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', {sensitivity: 'base'}));
+    }
+    return copia;
+  }
+
   const estadoLabels = {
     nuevo: 'Nuevo', en_seguimiento: 'En seguimiento', caliente: 'Caliente',
     cerrado: 'Cerrado', frio: 'Frío', respondio: 'Respondió'
@@ -1287,7 +1349,7 @@
     const listContent = document.getElementById('listContent');
     listContent.innerHTML = '<div class="loading-text">Cargando...</div>';
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=200`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=2000`, {
         headers: await authHeaders()
       });
       if (!res.ok) throw new Error('Error al cargar');
@@ -1305,6 +1367,8 @@
     if (filtroActual === 'respondio') leads = leads.filter(l => l.estado === 'respondio' || l.ultima_respuesta);
     else if (filtroActual === 'activos') leads = leads.filter(l => l.estado !== 'respondio' && l.estado !== 'cerrado' && !l.seguimiento_pausado);
     else if (filtroActual === 'pausados') leads = leads.filter(l => l.seguimiento_pausado);
+
+    leads = ordenarLeads(leads);
 
     if (!leads.length) {
       listContent.innerHTML = '<div class="loading-text">No hay leads en esta vista.</div>';
