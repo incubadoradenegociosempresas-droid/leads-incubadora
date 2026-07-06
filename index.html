@@ -888,20 +888,25 @@
   const quickPaste = document.getElementById('quickPaste');
   const quickFeedback = document.getElementById('quickFeedback');
 
+  /* ───────── NORMALIZADOR ÚNICO DE TELÉFONO ─────────
+     Fuente de verdad para las 3 rutas de entrada (formulario manual,
+     pegado rápido, importador CSV). Siempre devuelve "52" + 10 dígitos,
+     o null si no se puede armar un número válido. */
+  function normalizarTelefono(raw) {
+    if (!raw) return null;
+    let num = String(raw).replace(/\D/g, '');
+    if (num.length === 13 && num.startsWith('521')) num = num.slice(3);       // 521 fantasma
+    else if (num.length === 12 && num.startsWith('52')) num = num.slice(2);   // ya trae 52
+    else if (num.length === 11 && num.startsWith('1')) num = num.slice(1);    // 1 suelto sin lada
+    if (num.length !== 10) return null;
+    return '52' + num;
+  }
+
   function detectarTelefono(texto) {
-    const soloDigitos = texto.replace(/[^\d]/g, '');
     const matches = texto.match(/(\+?\d[\d\s\-\(\)]{8,}\d)/g);
     if (!matches) return null;
     let mejor = matches.sort((a, b) => b.replace(/\D/g,'').length - a.replace(/\D/g,'').length)[0];
-    let num = mejor.replace(/\D/g, '');
-    if (num.length === 10) {
-      num = '52' + num;
-    } else if (num.length === 12 && num.startsWith('52')) {
-      // ya está bien
-    } else if (num.length === 13 && num.startsWith('521')) {
-      num = '52' + num.slice(3);
-    }
-    return num.length >= 10 ? num : null;
+    return normalizarTelefono(mejor);
   }
 
   function detectarNombre(texto) {
@@ -959,11 +964,7 @@
   const POR_DIA = 30;   // total de leads que sale por día (3 turnos x 10)
 
   function limpiarTel(raw) {
-    if (!raw) return null;
-    let num = String(raw).replace(/\D/g, '');
-    if (num.length === 10) num = '52' + num;
-    else if (num.length === 13 && num.startsWith('521')) num = '52' + num.slice(3);
-    return num.length >= 11 ? num : null;
+    return normalizarTelefono(raw);
   }
 
   function parseCSV(texto) {
@@ -1197,9 +1198,17 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Guardando...';
 
+    const telNormalizado = normalizarTelefono(document.getElementById('telefono').value);
+    if (!telNormalizado) {
+      showMsg('Teléfono inválido. Verifica que tenga 10 dígitos.', 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Guardar lead';
+      return;
+    }
+
     const payload = {
       nombre: document.getElementById('nombre').value.trim(),
-      telefono: document.getElementById('telefono').value.trim(),
+      telefono: telNormalizado,
       servicio_interes: document.getElementById('servicio').value || null,
       estado: estadoSeleccionado,
       fecha_proximo_seguimiento: document.getElementById('fechaSeg1').value || null,
