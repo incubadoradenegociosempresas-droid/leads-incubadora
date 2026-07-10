@@ -514,12 +514,66 @@
   .lead-item .meta { color: var(--text-dim); font-size: 12px; }
 
   /* ── Panel de gestión ── */
+  .buscador {
+    width: 100%;
+    margin-bottom: 12px;
+    font-size: 15px;
+  }
+
   .panel-filtros {
     display: flex;
     gap: 6px;
     margin-bottom: 14px;
     flex-wrap: wrap;
   }
+
+  .filtro-btn.accion {
+    border-color: var(--accent);
+  }
+
+  .filtro-btn.accion.active {
+    background: var(--accent);
+    color: #1A0E05;
+    border-color: var(--accent);
+  }
+
+  .conteo-hoy {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: rgba(255,122,48,0.08);
+    border-radius: 8px;
+    border: 1px solid var(--accent-dim);
+  }
+
+  .conteo-hoy b { color: var(--accent); }
+
+  .seccion-sep {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 18px 0 10px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .pl-tiempo {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--success);
+    margin-bottom: 6px;
+  }
+
+  .pl-atrasado {
+    border-color: var(--danger) !important;
+    background: rgba(255,92,92,0.05);
+  }
+
+  .badge.atrasado { background: rgba(255,92,92,0.2); color: var(--danger); }
+  .badge.hoy { background: rgba(255,122,48,0.2); color: var(--accent); }
 
   .filtro-btn {
     flex: 1;
@@ -606,26 +660,6 @@
 
   .badge.respondio { background: rgba(61,220,151,0.2); color: var(--success); }
   .badge.pausa { background: rgba(138,143,156,0.2); color: var(--text-dim); }
-
-  .orden-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-    font-size: 12px;
-    color: var(--text-dim);
-  }
-
-  .orden-wrap select {
-    flex: 1;
-    background: #11141A;
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 8px;
-    padding: 8px 10px;
-    font-size: 12px;
-    font-weight: 600;
-  }
 
   #listSection { display: none; }
   #listSection.show { display: block; }
@@ -795,20 +829,13 @@
   </div>
 
   <div id="listSection" class="card">
+    <input type="text" id="buscadorLeads" class="buscador" placeholder="🔍 Buscar por nombre o teléfono...">
     <div class="panel-filtros" id="panelFiltros">
-      <button class="filtro-btn active" data-filtro="todos">Todos</button>
+      <button class="filtro-btn accion active" data-filtro="hoy">🔥 Acción de hoy</button>
       <button class="filtro-btn" data-filtro="respondio">Respondieron</button>
       <button class="filtro-btn" data-filtro="activos">Activos</button>
       <button class="filtro-btn" data-filtro="pausados">Pausados</button>
-    </div>
-    <div class="orden-wrap">
-      <label for="ordenSelect">Ordenar por:</label>
-      <select id="ordenSelect">
-        <option value="proximo">Próximo seguimiento (más urgente)</option>
-        <option value="ultimo_contacto">Último contacto (más antiguo)</option>
-        <option value="registro">Fecha de registro (más nuevo)</option>
-        <option value="nombre">Nombre (A-Z)</option>
-      </select>
+      <button class="filtro-btn" data-filtro="todos">Todos</button>
     </div>
     <div id="listContent" class="loading-text">Cargando...</div>
   </div>
@@ -917,25 +944,20 @@
   const quickPaste = document.getElementById('quickPaste');
   const quickFeedback = document.getElementById('quickFeedback');
 
-  /* ───────── NORMALIZADOR ÚNICO DE TELÉFONO ─────────
-     Fuente de verdad para las 3 rutas de entrada (formulario manual,
-     pegado rápido, importador CSV). Siempre devuelve "52" + 10 dígitos,
-     o null si no se puede armar un número válido. */
-  function normalizarTelefono(raw) {
-    if (!raw) return null;
-    let num = String(raw).replace(/\D/g, '');
-    if (num.length === 13 && num.startsWith('521')) num = num.slice(3);       // 521 fantasma
-    else if (num.length === 12 && num.startsWith('52')) num = num.slice(2);   // ya trae 52
-    else if (num.length === 11 && num.startsWith('1')) num = num.slice(1);    // 1 suelto sin lada
-    if (num.length !== 10) return null;
-    return '52' + num;
-  }
-
   function detectarTelefono(texto) {
+    const soloDigitos = texto.replace(/[^\d]/g, '');
     const matches = texto.match(/(\+?\d[\d\s\-\(\)]{8,}\d)/g);
     if (!matches) return null;
     let mejor = matches.sort((a, b) => b.replace(/\D/g,'').length - a.replace(/\D/g,'').length)[0];
-    return normalizarTelefono(mejor);
+    let num = mejor.replace(/\D/g, '');
+    if (num.length === 10) {
+      num = '52' + num;
+    } else if (num.length === 12 && num.startsWith('52')) {
+      // ya está bien
+    } else if (num.length === 13 && num.startsWith('521')) {
+      num = '52' + num.slice(3);
+    }
+    return num.length >= 10 ? num : null;
   }
 
   function detectarNombre(texto) {
@@ -993,7 +1015,11 @@
   const POR_DIA = 30;   // total de leads que sale por día (3 turnos x 10)
 
   function limpiarTel(raw) {
-    return normalizarTelefono(raw);
+    if (!raw) return null;
+    let num = String(raw).replace(/\D/g, '');
+    if (num.length === 10) num = '52' + num;
+    else if (num.length === 13 && num.startsWith('521')) num = '52' + num.slice(3);
+    return num.length >= 11 ? num : null;
   }
 
   function parseCSV(texto) {
@@ -1227,17 +1253,9 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Guardando...';
 
-    const telNormalizado = normalizarTelefono(document.getElementById('telefono').value);
-    if (!telNormalizado) {
-      showMsg('Teléfono inválido. Verifica que tenga 10 dígitos.', 'error');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Guardar lead';
-      return;
-    }
-
     const payload = {
       nombre: document.getElementById('nombre').value.trim(),
-      telefono: telNormalizado,
+      telefono: document.getElementById('telefono').value.trim(),
       servicio_interes: document.getElementById('servicio').value || null,
       estado: estadoSeleccionado,
       fecha_proximo_seguimiento: document.getElementById('fechaSeg1').value || null,
@@ -1283,9 +1301,15 @@
   /* ───────── PANEL DE GESTIÓN ───────── */
   const toggleListBtn = document.getElementById('toggleListBtn');
   const listSection = document.getElementById('listSection');
-  let filtroActual = 'todos';
-  let ordenActual = 'proximo';
+  let filtroActual = 'hoy';
   let todosLosLeads = [];
+  let terminoBusqueda = '';
+
+  // Buscador en tiempo real (nombre o teléfono)
+  document.getElementById('buscadorLeads').addEventListener('input', (e) => {
+    terminoBusqueda = e.target.value.trim().toLowerCase();
+    renderLeads();
+  });
 
   toggleListBtn.addEventListener('click', () => {
     const isShowing = listSection.classList.contains('show');
@@ -1308,38 +1332,6 @@
     renderLeads();
   });
 
-  document.getElementById('ordenSelect').addEventListener('change', (e) => {
-    ordenActual = e.target.value;
-    renderLeads();
-  });
-
-  // Convierte fecha_proximo_seguimiento + hora_proximo_seguimiento a timestamp comparable.
-  // Sin fecha -> se manda al final (Infinity), sea cual sea el orden.
-  function timestampProximo(lead) {
-    if (!lead.fecha_proximo_seguimiento) return Infinity;
-    const hora = lead.hora_proximo_seguimiento || '00:00:00';
-    return new Date(`${lead.fecha_proximo_seguimiento}T${hora}`).getTime();
-  }
-
-  function timestampUltimoContacto(lead) {
-    if (!lead.fecha_ultimo_contacto) return Infinity;
-    return new Date(lead.fecha_ultimo_contacto).getTime();
-  }
-
-  function ordenarLeads(leads) {
-    const copia = [...leads];
-    if (ordenActual === 'proximo') {
-      copia.sort((a, b) => timestampProximo(a) - timestampProximo(b));
-    } else if (ordenActual === 'ultimo_contacto') {
-      copia.sort((a, b) => timestampUltimoContacto(a) - timestampUltimoContacto(b));
-    } else if (ordenActual === 'registro') {
-      copia.sort((a, b) => new Date(b.fecha_registro).getTime() - new Date(a.fecha_registro).getTime());
-    } else if (ordenActual === 'nombre') {
-      copia.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', {sensitivity: 'base'}));
-    }
-    return copia;
-  }
-
   const estadoLabels = {
     nuevo: 'Nuevo', en_seguimiento: 'En seguimiento', caliente: 'Caliente',
     cerrado: 'Cerrado', frio: 'Frío', respondio: 'Respondió'
@@ -1349,7 +1341,7 @@
     const listContent = document.getElementById('listContent');
     listContent.innerHTML = '<div class="loading-text">Cargando...</div>';
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=2000`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=200`, {
         headers: await authHeaders()
       });
       if (!res.ok) throw new Error('Error al cargar');
@@ -1361,23 +1353,121 @@
     }
   }
 
+  // Fecha de hoy en formato YYYY-MM-DD (zona local)
+  function hoyStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  // Peso de prioridad: menor número = más arriba. Ordena por urgencia comercial.
+  function prioridad(lead) {
+    if (lead.estado === 'respondio' || lead.ultima_respuesta) return 0; // respondieron = máxima
+    if (lead.estado === 'caliente') return 1;
+    const hoy = hoyStr();
+    if (lead.fecha_proximo_seguimiento && lead.fecha_proximo_seguimiento.slice(0,10) < hoy && !lead.seguimiento_pausado) return 2; // atrasados
+    if (lead.fecha_proximo_seguimiento && lead.fecha_proximo_seguimiento.slice(0,10) === hoy) return 3; // hoy
+    if (lead.estado === 'en_seguimiento') return 4;
+    if (lead.estado === 'nuevo') return 5;
+    if (lead.estado === 'frio') return 6;
+    return 7; // cerrado/pausado al fondo
+  }
+
   function renderLeads() {
     const listContent = document.getElementById('listContent');
+    const hoy = hoyStr();
     let leads = todosLosLeads;
-    if (filtroActual === 'respondio') leads = leads.filter(l => l.estado === 'respondio' || l.ultima_respuesta);
-    else if (filtroActual === 'activos') leads = leads.filter(l => l.estado !== 'respondio' && l.estado !== 'cerrado' && !l.seguimiento_pausado);
-    else if (filtroActual === 'pausados') leads = leads.filter(l => l.seguimiento_pausado);
 
-    leads = ordenarLeads(leads);
-
-    if (!leads.length) {
-      listContent.innerHTML = '<div class="loading-text">No hay leads en esta vista.</div>';
+    // Si hay búsqueda activa, busca en TODOS (ignora la pestaña) — útil para encontrar cualquier lead
+    if (terminoBusqueda) {
+      leads = todosLosLeads.filter(l =>
+        (l.nombre || '').toLowerCase().includes(terminoBusqueda) ||
+        (l.telefono || '').includes(terminoBusqueda)
+      );
+      leads = [...leads].sort((a, b) => prioridad(a) - prioridad(b));
+      if (!leads.length) {
+        listContent.innerHTML = '<div class="loading-text">Sin resultados para "' + escapeHtml(terminoBusqueda) + '".</div>';
+        return;
+      }
+      listContent.innerHTML = renderLeadCards(leads, hoy);
       return;
     }
 
-    listContent.innerHTML = leads.map(lead => {
+    // 1. Filtro de pestaña
+    if (filtroActual === 'hoy') {
+      // Acción de hoy: respondieron + programados para hoy + atrasados (no pausados, no cerrados)
+      leads = leads.filter(l => {
+        if (l.estado === 'cerrado' || l.seguimiento_pausado) return false;
+        const respondio = l.estado === 'respondio' || l.ultima_respuesta;
+        const esHoy = l.fecha_proximo_seguimiento && l.fecha_proximo_seguimiento.slice(0,10) === hoy;
+        const atrasado = l.fecha_proximo_seguimiento && l.fecha_proximo_seguimiento.slice(0,10) < hoy;
+        return respondio || esHoy || atrasado;
+      });
+    }
+    else if (filtroActual === 'respondio') {
+      // Vista especial: respondidos ordenados por recencia + pausados agrupados aparte
+      const respondidos = todosLosLeads.filter(l => l.estado === 'respondio' || l.ultima_respuesta);
+      const fechaResp = l => new Date(l.fecha_ultimo_contacto || l.fecha_registro || 0).getTime();
+      const activos = respondidos.filter(l => !l.seguimiento_pausado && l.estado !== 'cerrado')
+        .sort((a, b) => fechaResp(b) - fechaResp(a)); // más reciente primero
+      const pausadosResp = respondidos.filter(l => l.seguimiento_pausado || l.estado === 'cerrado')
+        .sort((a, b) => fechaResp(b) - fechaResp(a));
+
+      let html = '';
+      if (activos.length) {
+        html += `<div class="conteo-hoy">💬 <b>${activos.length}</b> por atender — el más reciente arriba</div>`;
+        html += renderLeadCards(activos, hoy);
+      }
+      if (pausadosResp.length) {
+        html += `<div class="seccion-sep">⏸ Pausados / Cerrados (${pausadosResp.length})</div>`;
+        html += renderLeadCards(pausadosResp, hoy);
+      }
+      if (!html) html = '<div class="loading-text">Nadie ha respondido aún.</div>';
+      listContent.innerHTML = html;
+      return;
+    }
+    else if (filtroActual === 'activos') leads = leads.filter(l => l.estado !== 'respondio' && l.estado !== 'cerrado' && !l.seguimiento_pausado);
+    else if (filtroActual === 'pausados') leads = leads.filter(l => l.seguimiento_pausado);
+
+    // Orden por prioridad comercial (respondieron y calientes arriba)
+    leads = [...leads].sort((a, b) => prioridad(a) - prioridad(b));
+
+    // Encabezado de conteo cuando estás en "Acción de hoy"
+    let encabezado = '';
+    if (filtroActual === 'hoy' && !terminoBusqueda) {
+      const respondieron = todosLosLeads.filter(l => (l.estado === 'respondio' || l.ultima_respuesta) && l.estado !== 'cerrado' && !l.seguimiento_pausado).length;
+      const atrasados = todosLosLeads.filter(l => l.fecha_proximo_seguimiento && l.fecha_proximo_seguimiento.slice(0,10) < hoy && l.estado !== 'cerrado' && !l.seguimiento_pausado && l.estado !== 'respondio').length;
+      const paraHoy = todosLosLeads.filter(l => l.fecha_proximo_seguimiento && l.fecha_proximo_seguimiento.slice(0,10) === hoy && l.estado !== 'cerrado' && !l.seguimiento_pausado).length;
+      encabezado = `<div class="conteo-hoy">📋 Hoy tienes: <b>${respondieron}</b> que respondieron · <b>${atrasados}</b> atrasados · <b>${paraHoy}</b> programados</div>`;
+    }
+
+    if (!leads.length) {
+      listContent.innerHTML = encabezado + '<div class="loading-text">No hay leads en esta vista.</div>';
+      return;
+    }
+    listContent.innerHTML = encabezado + renderLeadCards(leads, hoy);
+  }
+
+  // "hace 5 min", "hace 2 h", "ayer", "hace 3 días"
+  function tiempoRelativo(fechaStr) {
+    if (!fechaStr) return '';
+    const diff = Date.now() - new Date(fechaStr).getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return 'ahora mismo';
+    if (min < 60) return `hace ${min} min`;
+    const hrs = Math.floor(min / 60);
+    if (hrs < 24) return `hace ${hrs} h`;
+    const dias = Math.floor(hrs / 24);
+    if (dias === 1) return 'ayer';
+    return `hace ${dias} días`;
+  }
+
+  function renderLeadCards(leads, hoy) {
+    return leads.map(lead => {
       const respondio = lead.estado === 'respondio' || lead.ultima_respuesta;
       const pausado = lead.seguimiento_pausado;
+      const fechaProx = lead.fecha_proximo_seguimiento ? lead.fecha_proximo_seguimiento.slice(0,10) : null;
+      const atrasado = fechaProx && fechaProx < hoy && !pausado && lead.estado !== 'cerrado' && !respondio;
+      const esHoy = fechaProx === hoy && !pausado;
       const fechaEnvio = lead.fecha_ultimo_contacto
         ? new Date(lead.fecha_ultimo_contacto).toLocaleDateString('es-MX', {day:'2-digit', month:'short'})
         : '—';
@@ -1385,9 +1475,11 @@
         ? lead.fecha_proximo_seguimiento.slice(5) + (lead.hora_proximo_seguimiento ? ' ' + lead.hora_proximo_seguimiento.slice(0,5) : '')
         : '—';
       let badge = `<span class="badge ${lead.estado}">${estadoLabels[lead.estado] || lead.estado}</span>`;
+      if (atrasado) badge = `<span class="badge atrasado">⚠️ Atrasado</span> ` + badge;
+      else if (esHoy && !respondio) badge = `<span class="badge hoy">📅 Hoy</span> ` + badge;
       if (pausado) badge += ' <span class="badge pausa">⏸ Pausado</span>';
       return `
-        <div class="panel-lead ${respondio ? 'respondio' : ''} ${pausado ? 'pausado' : ''}">
+        <div class="panel-lead ${respondio ? 'respondio' : ''} ${pausado ? 'pausado' : ''} ${atrasado ? 'pl-atrasado' : ''}">
           <div class="pl-top">
             <div>
               <div class="pl-nombre">${escapeHtml(lead.nombre)}</div>
@@ -1400,6 +1492,7 @@
             <span>Últ. envío: <b>${fechaEnvio}</b></span>
             <span>Próx: <b>${proxToque}</b></span>
           </div>
+          ${respondio ? `<div class="pl-tiempo">💬 Respondió ${tiempoRelativo(lead.fecha_ultimo_contacto || lead.fecha_registro)}</div>` : ''}
           ${respondio && lead.ultima_respuesta ? `<div class="pl-respondio-msg">💬 "${escapeHtml(lead.ultima_respuesta)}"</div>` : ''}
           <div class="pl-acciones">
             <button class="pl-btn warn" data-accion="reiniciar" data-id="${lead.id}">🔄 Reiniciar</button>
