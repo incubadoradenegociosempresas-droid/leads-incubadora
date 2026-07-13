@@ -335,6 +335,7 @@
   input[type="password"],
   input[type="date"],
   input[type="time"],
+  input[type="number"],
   select,
   textarea {
     width: 100%;
@@ -440,6 +441,50 @@
     border-color: var(--border);
   }
 
+  /* ── Venta (form) ── */
+  .venta-section {
+    border: 1px dashed rgba(61,220,151,0.35);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 18px;
+    background: rgba(61,220,151,0.03);
+  }
+
+  .venta-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--success);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+
+  .venta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .checkbox-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--success);
+  }
+
+  .checkbox-row label {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text);
+  }
+
   .submit-btn {
     width: 100%;
     padding: 15px;
@@ -510,6 +555,11 @@
   .badge.caliente { background: rgba(255,92,92,0.15); color: var(--danger); }
   .badge.cerrado { background: rgba(61,220,151,0.15); color: var(--success); }
   .badge.frio { background: rgba(138,143,156,0.15); color: var(--text-dim); }
+  .badge.respondio { background: rgba(61,220,151,0.2); color: var(--success); }
+  .badge.pausa { background: rgba(138,143,156,0.2); color: var(--text-dim); }
+  .badge.vendido { background: rgba(61,220,151,0.25); color: var(--success); border: 1px solid rgba(61,220,151,0.4); }
+  .badge.atrasado { background: rgba(255,92,92,0.2); color: var(--danger); }
+  .badge.hoy { background: rgba(255,122,48,0.2); color: var(--accent); }
 
   .lead-item .meta { color: var(--text-dim); font-size: 12px; }
 
@@ -572,9 +622,6 @@
     background: rgba(255,92,92,0.05);
   }
 
-  .badge.atrasado { background: rgba(255,92,92,0.2); color: var(--danger); }
-  .badge.hoy { background: rgba(255,122,48,0.2); color: var(--accent); }
-
   .filtro-btn {
     flex: 1;
     min-width: 70px;
@@ -603,6 +650,7 @@
 
   .panel-lead.respondio { border-color: rgba(61,220,151,0.4); background: rgba(61,220,151,0.04); }
   .panel-lead.pausado { opacity: 0.7; }
+  .panel-lead.vendido-card { border-color: rgba(61,220,151,0.5); background: rgba(61,220,151,0.05); }
 
   .pl-top {
     display: flex;
@@ -635,6 +683,44 @@
     margin-bottom: 10px;
   }
 
+  /* ── Info de venta en panel ── */
+  .pl-venta {
+    background: rgba(61,220,151,0.08);
+    border: 1px solid rgba(61,220,151,0.3);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .pl-venta .venta-titulo {
+    color: var(--success);
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .pl-venta b { color: var(--text); }
+
+  /* ── Botón de cobro ── */
+  .pl-cobro-btn {
+    width: 100%;
+    background: rgba(61,220,151,0.1);
+    border: 1px solid rgba(61,220,151,0.4);
+    color: var(--success);
+    border-radius: 7px;
+    padding: 9px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 8px;
+    text-align: center;
+    display: block;
+  }
+
+  .pl-cobro-btn:active { opacity: 0.7; }
+
   .pl-acciones {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -657,9 +743,6 @@
   .pl-btn.warn { color: #FFC800; }
   .pl-btn.danger { color: var(--danger); }
   .pl-btn.ok { color: var(--success); }
-
-  .badge.respondio { background: rgba(61,220,151,0.2); color: var(--success); }
-  .badge.pausa { background: rgba(138,143,156,0.2); color: var(--text-dim); }
 
   #listSection { display: none; }
   #listSection.show { display: block; }
@@ -821,6 +904,45 @@
       <textarea id="notas" placeholder="Contexto rápido: qué pidió, objeciones, cuándo decide..."></textarea>
     </div>
 
+    <!-- ── DATOS DE VENTA (opcional) ── -->
+    <div class="venta-section">
+      <div class="venta-section-title">💰 Datos de venta <span style="font-weight:400;color:var(--text-dim)">(si ya cerró)</span></div>
+      <div class="field" style="margin-bottom:10px;">
+        <label for="productoVendido" style="font-size:12px;margin-bottom:6px;">Producto vendido</label>
+        <select id="productoVendido">
+          <option value="">— Sin venta —</option>
+          <option value="Página Web Presencia">Página Web - Presencia ($1,500)</option>
+          <option value="Página Web Landing">Página Web - Landing ($2,000)</option>
+          <option value="Página Web Informativa">Página Web - Informativa ($3,500)</option>
+          <option value="Página Web Catálogo">Página Web - Catálogo ($5,000)</option>
+          <option value="Tienda en Línea">Tienda en Línea ($8,000)</option>
+          <option value="CRM Esencial">CRM Esencial ($14,500)</option>
+          <option value="CRM Profesional">CRM Profesional ($24,000)</option>
+          <option value="CRM Empresarial">CRM Empresarial ($38,000+)</option>
+          <option value="Automatización 1 flujo">Automatización - 1 flujo ($4,500)</option>
+          <option value="Automatización 3 flujos">Automatización - 3 flujos ($11,000)</option>
+          <option value="WhatsApp Pro">WhatsApp Pro ($4,750)</option>
+          <option value="Curso IA">Curso Empresarial IA</option>
+          <option value="App personalizada">App personalizada</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="venta-row">
+        <div>
+          <label style="font-size:12px;margin-bottom:6px;">Monto pagado (MXN)</label>
+          <input type="number" id="montoPagado" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div>
+          <label style="font-size:12px;margin-bottom:6px;">Venc. dominio</label>
+          <input type="date" id="fechaVencDominio">
+        </div>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="pagoConfirmado">
+        <label for="pagoConfirmado">Pago confirmado</label>
+      </div>
+    </div>
+
     <button type="submit" class="submit-btn" id="submitBtn">Guardar lead</button>
   </form>
 
@@ -847,11 +969,8 @@
   const SUPABASE_URL = "https://ytxnmscxyjttqftmznqj.supabase.co";
   const SUPABASE_KEY = "sb_publishable_T3LJo-8teMIkimAtHitGWA_XKjzDBP5";
 
-  // Cliente de Supabase (maneja auth + sesión)
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Devuelve los headers con el token de sesión del usuario logueado.
-  // Esto es lo que hace que las policies te reconozcan como "authenticated".
   async function authHeaders(extra = {}) {
     const { data } = await sb.auth.getSession();
     const token = data.session ? data.session.access_token : SUPABASE_KEY;
@@ -907,7 +1026,6 @@
     await checkSession();
   });
 
-  // Permite login con Enter
   loginPass.addEventListener('keydown', (e) => { if (e.key === 'Enter') loginBtn.click(); });
 
   logoutBtn.addEventListener('click', async () => {
@@ -915,7 +1033,6 @@
     await checkSession();
   });
 
-  // Al cargar la página, revisa si ya hay sesión activa
   checkSession();
 
   /* ═══════════ APP ═══════════ */
@@ -945,18 +1062,13 @@
   const quickFeedback = document.getElementById('quickFeedback');
 
   function detectarTelefono(texto) {
-    const soloDigitos = texto.replace(/[^\d]/g, '');
     const matches = texto.match(/(\+?\d[\d\s\-\(\)]{8,}\d)/g);
     if (!matches) return null;
     let mejor = matches.sort((a, b) => b.replace(/\D/g,'').length - a.replace(/\D/g,'').length)[0];
     let num = mejor.replace(/\D/g, '');
-    if (num.length === 10) {
-      num = '52' + num;
-    } else if (num.length === 12 && num.startsWith('52')) {
-      // ya está bien
-    } else if (num.length === 13 && num.startsWith('521')) {
-      num = '52' + num.slice(3);
-    }
+    if (num.length === 10) num = '52' + num;
+    else if (num.length === 12 && num.startsWith('52')) { /* ok */ }
+    else if (num.length === 13 && num.startsWith('521')) num = '52' + num.slice(3);
     return num.length >= 10 ? num : null;
   }
 
@@ -1012,7 +1124,7 @@
   const importBtn = document.getElementById('importBtn');
   let leadsAImportar = [];
 
-  const POR_DIA = 30;   // total de leads que sale por día (3 turnos x 10)
+  const POR_DIA = 30;
 
   function limpiarTel(raw) {
     if (!raw) return null;
@@ -1068,10 +1180,8 @@
     if (e.target.files[0]) procesarArchivo(e.target.files[0]);
   });
 
-  // Devuelve fecha (YYYY-MM-DD) y hora (HH:MM:SS) segun el índice global del lead nuevo.
-  // Reparte 30/día en 3 turnos: 0-9 -> 09:00, 10-19 -> 14:30, 20-29 -> 19:00
   function slotDeLead(indiceGlobal) {
-    const diaOffset = Math.floor(indiceGlobal / POR_DIA) + 1; // +1 = a partir de mañana
+    const diaOffset = Math.floor(indiceGlobal / POR_DIA) + 1;
     const pos = indiceGlobal % POR_DIA;
     let hora;
     if (pos < 10) hora = '09:00:00';
@@ -1092,10 +1202,8 @@
       return;
     }
 
-    // 1. Traer teléfonos existentes (para duplicados) + contar cuántos leads ya
-    //    están programados por día, para NO encimar sobre la cola actual.
     let existentes = new Set();
-    let cargaPorDia = {}; // { 'YYYY-MM-DD': cantidad }
+    let cargaPorDia = {};
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=telefono,fecha_proximo_seguimiento,estado,seguimiento_pausado`, {
         headers: await authHeaders()
@@ -1104,7 +1212,6 @@
         const data = await res.json();
         data.forEach(r => {
           existentes.add(limpiarTel(r.telefono));
-          // solo cuentan los que siguen en cola de envío
           if (r.estado === 'nuevo' && !r.seguimiento_pausado && r.fecha_proximo_seguimiento) {
             const d = r.fecha_proximo_seguimiento.slice(0,10);
             cargaPorDia[d] = (cargaPorDia[d] || 0) + 1;
@@ -1113,7 +1220,6 @@
       }
     } catch (err) { console.warn('No pude verificar duplicados/carga', err); }
 
-    // 2. Mapear y clasificar
     leadsAImportar = [];
     let nuevos = 0, dups = 0, malos = 0;
     const vistos = new Set();
@@ -1137,8 +1243,6 @@
       if (esDup) dups++; else nuevos++;
     });
 
-    // 2b. Reparto REAL con tope diario que respeta lo que ya hay en cola.
-    //     Busca el primer slot libre día por día, arrancando mañana.
     let cursorDia = 1;
     function huecosEnDia(fechaStr) {
       return POR_DIA - (cargaPorDia[fechaStr] || 0);
@@ -1147,14 +1251,12 @@
       const d = new Date(); d.setDate(d.getDate() + off);
       return d.toISOString().slice(0,10);
     }
-    let posEnDia = 0; // posición dentro del día actual (para asignar turno)
-    // avanza cursor hasta un día con hueco
+    let posEnDia = 0;
     while (huecosEnDia(fechaOffset(cursorDia)) <= 0) cursorDia++;
-    posEnDia = POR_DIA - huecosEnDia(fechaOffset(cursorDia)); // arranca donde quedó la carga previa
+    posEnDia = POR_DIA - huecosEnDia(fechaOffset(cursorDia));
 
     leadsAImportar.forEach(l => {
       if (l._dup) return;
-      // si el día actual se llenó, salta al siguiente con hueco
       while (posEnDia >= POR_DIA || huecosEnDia(fechaOffset(cursorDia)) <= 0) {
         cursorDia++;
         while (huecosEnDia(fechaOffset(cursorDia)) <= 0) cursorDia++;
@@ -1171,7 +1273,6 @@
       posEnDia++;
     });
 
-    // 3. Preview
     const diasNecesarios = Math.max(1, Math.ceil(nuevos / POR_DIA));
     importStats.innerHTML =
       `<span class="stat-pill new">${nuevos} nuevos</span>` +
@@ -1253,11 +1354,17 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Guardando...';
 
+    const productoVendido = document.getElementById('productoVendido').value || null;
+    const montoStr = document.getElementById('montoPagado').value;
+    const monto = montoStr ? parseFloat(montoStr) : null;
+    const pagoConf = document.getElementById('pagoConfirmado').checked;
+    const fechaVenc = document.getElementById('fechaVencDominio').value || null;
+
     const payload = {
       nombre: document.getElementById('nombre').value.trim(),
       telefono: document.getElementById('telefono').value.trim(),
       servicio_interes: document.getElementById('servicio').value || null,
-      estado: estadoSeleccionado,
+      estado: productoVendido ? 'cerrado' : estadoSeleccionado,
       fecha_proximo_seguimiento: document.getElementById('fechaSeg1').value || null,
       hora_proximo_seguimiento: document.getElementById('horaSeg1').value || null,
       fecha_seguimiento_2: document.getElementById('fechaSeg2').value || null,
@@ -1265,7 +1372,11 @@
       fecha_seguimiento_3: document.getElementById('fechaSeg3').value || null,
       hora_seguimiento_3: document.getElementById('horaSeg3').value || null,
       origen: document.getElementById('origen').value,
-      notas: document.getElementById('notas').value.trim() || null
+      notas: document.getElementById('notas').value.trim() || null,
+      producto_vendido: productoVendido,
+      monto_pagado: monto,
+      pago_confirmado: pagoConf,
+      fecha_vencimiento_dominio: fechaVenc
     };
 
     try {
@@ -1276,7 +1387,7 @@
       });
       if (!res.ok) { throw new Error(await res.text() || 'Error al guardar'); }
 
-      showMsg('Lead guardado correctamente.', 'success');
+      showMsg(productoVendido ? '¡Venta registrada! Lead cerrado.' : 'Lead guardado correctamente.', 'success');
       form.reset();
       quickPaste.value = '';
       quickFeedback.classList.remove('show');
@@ -1305,7 +1416,6 @@
   let todosLosLeads = [];
   let terminoBusqueda = '';
 
-  // Buscador en tiempo real (nombre o teléfono)
   document.getElementById('buscadorLeads').addEventListener('input', (e) => {
     terminoBusqueda = e.target.value.trim().toLowerCase();
     renderLeads();
@@ -1353,23 +1463,21 @@
     }
   }
 
-  // Fecha de hoy en formato YYYY-MM-DD (zona local)
   function hoyStr() {
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
 
-  // Peso de prioridad: menor número = más arriba. Ordena por urgencia comercial.
   function prioridad(lead) {
-    if (lead.estado === 'respondio' || lead.ultima_respuesta) return 0; // respondieron = máxima
+    if (lead.estado === 'respondio' || lead.ultima_respuesta) return 0;
     if (lead.estado === 'caliente') return 1;
     const hoy = hoyStr();
-    if (lead.fecha_proximo_seguimiento && lead.fecha_proximo_seguimiento.slice(0,10) < hoy && !lead.seguimiento_pausado) return 2; // atrasados
-    if (lead.fecha_proximo_seguimiento && lead.fecha_proximo_seguimiento.slice(0,10) === hoy) return 3; // hoy
+    if (lead.fecha_proximo_seguimiento && lead.fecha_proximo_seguimiento.slice(0,10) < hoy && !lead.seguimiento_pausado) return 2;
+    if (lead.fecha_proximo_seguimiento && lead.fecha_proximo_seguimiento.slice(0,10) === hoy) return 3;
     if (lead.estado === 'en_seguimiento') return 4;
     if (lead.estado === 'nuevo') return 5;
     if (lead.estado === 'frio') return 6;
-    return 7; // cerrado/pausado al fondo
+    return 7;
   }
 
   function renderLeads() {
@@ -1377,7 +1485,6 @@
     const hoy = hoyStr();
     let leads = todosLosLeads;
 
-    // Si hay búsqueda activa, busca en TODOS (ignora la pestaña) — útil para encontrar cualquier lead
     if (terminoBusqueda) {
       leads = todosLosLeads.filter(l =>
         (l.nombre || '').toLowerCase().includes(terminoBusqueda) ||
@@ -1392,9 +1499,7 @@
       return;
     }
 
-    // 1. Filtro de pestaña
     if (filtroActual === 'hoy') {
-      // Acción de hoy: respondieron + programados para hoy + atrasados (no pausados, no cerrados)
       leads = leads.filter(l => {
         if (l.estado === 'cerrado' || l.seguimiento_pausado) return false;
         const respondio = l.estado === 'respondio' || l.ultima_respuesta;
@@ -1404,11 +1509,10 @@
       });
     }
     else if (filtroActual === 'respondio') {
-      // Vista especial: respondidos ordenados por recencia + pausados agrupados aparte
       const respondidos = todosLosLeads.filter(l => l.estado === 'respondio' || l.ultima_respuesta);
       const fechaResp = l => new Date(l.fecha_ultimo_contacto || l.fecha_registro || 0).getTime();
       const activos = respondidos.filter(l => !l.seguimiento_pausado && l.estado !== 'cerrado')
-        .sort((a, b) => fechaResp(b) - fechaResp(a)); // más reciente primero
+        .sort((a, b) => fechaResp(b) - fechaResp(a));
       const pausadosResp = respondidos.filter(l => l.seguimiento_pausado || l.estado === 'cerrado')
         .sort((a, b) => fechaResp(b) - fechaResp(a));
 
@@ -1428,10 +1532,8 @@
     else if (filtroActual === 'activos') leads = leads.filter(l => l.estado !== 'respondio' && l.estado !== 'cerrado' && !l.seguimiento_pausado);
     else if (filtroActual === 'pausados') leads = leads.filter(l => l.seguimiento_pausado);
 
-    // Orden por prioridad comercial (respondieron y calientes arriba)
     leads = [...leads].sort((a, b) => prioridad(a) - prioridad(b));
 
-    // Encabezado de conteo cuando estás en "Acción de hoy"
     let encabezado = '';
     if (filtroActual === 'hoy' && !terminoBusqueda) {
       const respondieron = todosLosLeads.filter(l => (l.estado === 'respondio' || l.ultima_respuesta) && l.estado !== 'cerrado' && !l.seguimiento_pausado).length;
@@ -1447,7 +1549,6 @@
     listContent.innerHTML = encabezado + renderLeadCards(leads, hoy);
   }
 
-  // "hace 5 min", "hace 2 h", "ayer", "hace 3 días"
   function tiempoRelativo(fechaStr) {
     if (!fechaStr) return '';
     const diff = Date.now() - new Date(fechaStr).getTime();
@@ -1461,10 +1562,16 @@
     return `hace ${dias} días`;
   }
 
+  function formatMonto(val) {
+    if (!val) return '';
+    return '$' + parseFloat(val).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' MXN';
+  }
+
   function renderLeadCards(leads, hoy) {
     return leads.map(lead => {
       const respondio = lead.estado === 'respondio' || lead.ultima_respuesta;
       const pausado = lead.seguimiento_pausado;
+      const tieneVenta = lead.producto_vendido || lead.monto_pagado;
       const fechaProx = lead.fecha_proximo_seguimiento ? lead.fecha_proximo_seguimiento.slice(0,10) : null;
       const atrasado = fechaProx && fechaProx < hoy && !pausado && lead.estado !== 'cerrado' && !respondio;
       const esHoy = fechaProx === hoy && !pausado;
@@ -1474,12 +1581,27 @@
       const proxToque = lead.fecha_proximo_seguimiento
         ? lead.fecha_proximo_seguimiento.slice(5) + (lead.hora_proximo_seguimiento ? ' ' + lead.hora_proximo_seguimiento.slice(0,5) : '')
         : '—';
+
       let badge = `<span class="badge ${lead.estado}">${estadoLabels[lead.estado] || lead.estado}</span>`;
       if (atrasado) badge = `<span class="badge atrasado">⚠️ Atrasado</span> ` + badge;
       else if (esHoy && !respondio) badge = `<span class="badge hoy">📅 Hoy</span> ` + badge;
       if (pausado) badge += ' <span class="badge pausa">⏸ Pausado</span>';
+      if (tieneVenta) badge += ' <span class="badge vendido">💰 Vendido</span>';
+
+      // Sección de venta
+      let ventaHtml = '';
+      if (tieneVenta) {
+        ventaHtml = `<div class="pl-venta">
+          <div class="venta-titulo">💰 Venta registrada</div>
+          ${lead.producto_vendido ? `<b>${escapeHtml(lead.producto_vendido)}</b><br>` : ''}
+          ${lead.monto_pagado ? `Monto: <b>${formatMonto(lead.monto_pagado)}</b> · ` : ''}
+          ${lead.pago_confirmado ? '<b style="color:var(--success)">✅ Pago confirmado</b>' : '<span style="color:#FFC800">⏳ Pago pendiente</span>'}
+          ${lead.fecha_vencimiento_dominio ? `<br>Vencimiento dominio: <b>${lead.fecha_vencimiento_dominio}</b>` : ''}
+        </div>`;
+      }
+
       return `
-        <div class="panel-lead ${respondio ? 'respondio' : ''} ${pausado ? 'pausado' : ''} ${atrasado ? 'pl-atrasado' : ''}">
+        <div class="panel-lead ${respondio ? 'respondio' : ''} ${pausado ? 'pausado' : ''} ${atrasado ? 'pl-atrasado' : ''} ${tieneVenta ? 'vendido-card' : ''}">
           <div class="pl-top">
             <div>
               <div class="pl-nombre">${escapeHtml(lead.nombre)}</div>
@@ -1494,6 +1616,10 @@
           </div>
           ${respondio ? `<div class="pl-tiempo">💬 Respondió ${tiempoRelativo(lead.fecha_ultimo_contacto || lead.fecha_registro)}</div>` : ''}
           ${respondio && lead.ultima_respuesta ? `<div class="pl-respondio-msg">💬 "${escapeHtml(lead.ultima_respuesta)}"</div>` : ''}
+          ${ventaHtml}
+          <button class="pl-cobro-btn" data-accion="cobro" data-id="${lead.id}">
+            ${tieneVenta ? '✏️ Editar venta' : '💰 Registrar venta'}
+          </button>
           <div class="pl-acciones">
             <button class="pl-btn warn" data-accion="reiniciar" data-id="${lead.id}">🔄 Reiniciar</button>
             <button class="pl-btn" data-accion="pausar" data-id="${lead.id}" data-pausado="${pausado}">${pausado ? '▶️ Reanudar' : '⏸ Pausar'}</button>
@@ -1508,7 +1634,7 @@
   }
 
   document.getElementById('listContent').addEventListener('click', async (e) => {
-    const btn = e.target.closest('.pl-btn');
+    const btn = e.target.closest('[data-accion]');
     if (!btn) return;
     const id = btn.dataset.id;
     const accion = btn.dataset.accion;
@@ -1517,7 +1643,31 @@
 
     let patch = null;
 
-    if (accion === 'reiniciar') {
+    if (accion === 'cobro') {
+      // Registrar o editar venta
+      const producto = prompt('Producto vendido:', lead.producto_vendido || '');
+      if (producto === null) return;
+      const montoStr = prompt('Monto pagado en MXN (sin comas ni $):', lead.monto_pagado || '');
+      if (montoStr === null) return;
+      const monto = montoStr.trim() ? parseFloat(montoStr.replace(/[^0-9.]/g,'')) : null;
+      const pagado = confirm('¿El pago ya está confirmado?\n\nAceptar = Sí, confirmado\nCancelar = No, pendiente');
+      const fechaVenc = prompt('Fecha de vencimiento del dominio (AAAA-MM-DD).\nDeja vacío si no aplica:', lead.fecha_vencimiento_dominio || '');
+      if (fechaVenc === null) return;
+
+      patch = {
+        producto_vendido: producto || null,
+        monto_pagado: monto,
+        pago_confirmado: pagado,
+        fecha_vencimiento_dominio: (fechaVenc && /^\d{4}-\d{2}-\d{2}$/.test(fechaVenc.trim())) ? fechaVenc.trim() : null
+      };
+
+      // Si tiene venta, cerrar automáticamente
+      if (producto || monto) {
+        patch.estado = 'cerrado';
+        patch.seguimiento_pausado = true;
+      }
+    }
+    else if (accion === 'reiniciar') {
       if (lead.estado === 'respondio') {
         if (!confirm(`${lead.nombre} ya respondió. ¿Seguro que quieres reiniciar la cadencia y volver a mandarle seguimientos?`)) return;
       } else {
@@ -1568,7 +1718,7 @@
           body: JSON.stringify(patch)
         });
         if (!res.ok) throw new Error(await res.text());
-        showMsg('Lead actualizado.', 'success');
+        showMsg(accion === 'cobro' ? '¡Venta registrada!' : 'Lead actualizado.', 'success');
         cargarLeads();
       } catch (err) { console.error(err); showMsg('Error al actualizar.', 'error'); }
     }
