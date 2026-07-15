@@ -560,6 +560,114 @@
   .badge.vendido { background: rgba(61,220,151,0.25); color: var(--success); border: 1px solid rgba(61,220,151,0.4); }
   .badge.atrasado { background: rgba(255,92,92,0.2); color: var(--danger); }
   .badge.hoy { background: rgba(255,122,48,0.2); color: var(--accent); }
+  .badge.escalado { background: rgba(255,92,92,0.28); color: #FF8A8A; border: 1px solid rgba(255,92,92,0.55); font-weight: 800; }
+
+  /* Tarjeta de lead escalado: borde rojo pulsante */
+  .panel-lead.escalado-card {
+    border: 1.5px solid var(--danger);
+    box-shadow: 0 0 0 1px rgba(255,92,92,0.25);
+    animation: pulseEsc 2s ease-in-out infinite;
+  }
+  @keyframes pulseEsc {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(255,92,92,0.25); }
+    50% { box-shadow: 0 0 0 3px rgba(255,92,92,0.15); }
+  }
+
+  /* Banner de escalados arriba */
+  .escalado-banner {
+    background: rgba(255,92,92,0.12);
+    border: 1px solid rgba(255,92,92,0.4);
+    color: #FF8A8A;
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Botón ver conversación */
+  .pl-chat-btn {
+    width: 100%;
+    background: rgba(255,122,48,0.12);
+    border: 1px solid rgba(255,122,48,0.35);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .pl-chat-btn:active { opacity: 0.7; }
+
+  /* Modal de conversación */
+  .chat-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .chat-overlay.open { display: flex; }
+  .chat-modal {
+    background: var(--card);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+  }
+  .chat-head {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .chat-head .ch-nombre { font-weight: 700; font-size: 16px; }
+  .chat-head .ch-tel { color: var(--text-dim); font-size: 12px; margin-top: 2px; }
+  .chat-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 24px; cursor: pointer; line-height: 1;
+  }
+  .chat-body {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .chat-msg {
+    max-width: 78%;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.35;
+    word-wrap: break-word;
+  }
+  .chat-msg .ch-time { display: block; font-size: 10px; opacity: 0.6; margin-top: 4px; }
+  .chat-msg.cliente {
+    align-self: flex-start;
+    background: #23272F;
+    color: var(--text);
+    border-bottom-left-radius: 3px;
+  }
+  .chat-msg.karina {
+    align-self: flex-end;
+    background: var(--accent-dim);
+    color: #FFD9BF;
+    border-bottom-right-radius: 3px;
+  }
+  .chat-empty { color: var(--text-dim); text-align: center; padding: 30px 0; font-size: 14px; }
 
   .lead-item .meta { color: var(--text-dim); font-size: 12px; }
 
@@ -1444,7 +1552,7 @@
 
   const estadoLabels = {
     nuevo: 'Nuevo', en_seguimiento: 'En seguimiento', caliente: 'Caliente',
-    cerrado: 'Cerrado', frio: 'Frío', respondio: 'Respondió'
+    cerrado: 'Cerrado', frio: 'Frío', respondio: 'Respondió', escalado: '🔔 Quiere hablar'
   };
 
   async function cargarLeads() {
@@ -1469,6 +1577,7 @@
   }
 
   function prioridad(lead) {
+    if (lead.estado === 'escalado') return -1;
     if (lead.estado === 'respondio' || lead.ultima_respuesta) return 0;
     if (lead.estado === 'caliente') return 1;
     const hoy = hoyStr();
@@ -1542,11 +1651,18 @@
       encabezado = `<div class="conteo-hoy">📋 Hoy tienes: <b>${respondieron}</b> que respondieron · <b>${atrasados}</b> atrasados · <b>${paraHoy}</b> programados</div>`;
     }
 
+    // Banner de leads que pidieron hablar contigo (siempre visible arriba)
+    const escalados = todosLosLeads.filter(l => l.estado === 'escalado');
+    let bannerEsc = '';
+    if (escalados.length) {
+      bannerEsc = `<div class="escalado-banner">🔔 <b>${escalados.length}</b> ${escalados.length === 1 ? 'lead pidió' : 'leads pidieron'} hablar contigo — atiéndelos primero</div>`;
+    }
+
     if (!leads.length) {
-      listContent.innerHTML = encabezado + '<div class="loading-text">No hay leads en esta vista.</div>';
+      listContent.innerHTML = bannerEsc + encabezado + '<div class="loading-text">No hay leads en esta vista.</div>';
       return;
     }
-    listContent.innerHTML = encabezado + renderLeadCards(leads, hoy);
+    listContent.innerHTML = bannerEsc + encabezado + renderLeadCards(leads, hoy);
   }
 
   function tiempoRelativo(fechaStr) {
@@ -1582,10 +1698,12 @@
         ? lead.fecha_proximo_seguimiento.slice(5) + (lead.hora_proximo_seguimiento ? ' ' + lead.hora_proximo_seguimiento.slice(0,5) : '')
         : '—';
 
+      const escalado = lead.estado === 'escalado';
       let badge = `<span class="badge ${lead.estado}">${estadoLabels[lead.estado] || lead.estado}</span>`;
-      if (atrasado) badge = `<span class="badge atrasado">⚠️ Atrasado</span> ` + badge;
+      if (escalado) badge = `<span class="badge escalado">🔔 Quiere hablar contigo</span>`;
+      else if (atrasado) badge = `<span class="badge atrasado">⚠️ Atrasado</span> ` + badge;
       else if (esHoy && !respondio) badge = `<span class="badge hoy">📅 Hoy</span> ` + badge;
-      if (pausado) badge += ' <span class="badge pausa">⏸ Pausado</span>';
+      if (pausado && !escalado) badge += ' <span class="badge pausa">⏸ Pausado</span>';
       if (tieneVenta) badge += ' <span class="badge vendido">💰 Vendido</span>';
 
       // Sección de venta
@@ -1601,7 +1719,7 @@
       }
 
       return `
-        <div class="panel-lead ${respondio ? 'respondio' : ''} ${pausado ? 'pausado' : ''} ${atrasado ? 'pl-atrasado' : ''} ${tieneVenta ? 'vendido-card' : ''}">
+        <div class="panel-lead ${escalado ? 'escalado-card' : ''} ${respondio ? 'respondio' : ''} ${pausado ? 'pausado' : ''} ${atrasado ? 'pl-atrasado' : ''} ${tieneVenta ? 'vendido-card' : ''}">
           <div class="pl-top">
             <div>
               <div class="pl-nombre">${escapeHtml(lead.nombre)}</div>
@@ -1609,6 +1727,7 @@
             </div>
             <div style="text-align:right;">${badge}</div>
           </div>
+          <button class="pl-chat-btn" data-accion="chat" data-id="${lead.id}">💬 Ver conversación</button>
           <div class="pl-info">
             <span>Seguimientos: <b>${lead.seguimientos_enviados ?? 0}</b></span>
             <span>Últ. envío: <b>${fechaEnvio}</b></span>
@@ -1643,7 +1762,11 @@
 
     let patch = null;
 
-    if (accion === 'cobro') {
+    if (accion === 'chat') {
+      abrirConversacion(lead);
+      return;
+    }
+    else if (accion === 'cobro') {
       // Registrar o editar venta
       const producto = prompt('Producto vendido:', lead.producto_vendido || '');
       if (producto === null) return;
@@ -1680,9 +1803,9 @@
       patch = { seguimiento_pausado: !lead.seguimiento_pausado };
     }
     else if (accion === 'estado') {
-      const nuevo = prompt('Nuevo estado (nuevo, en_seguimiento, caliente, frio, cerrado, respondio):', lead.estado);
+      const nuevo = prompt('Nuevo estado (nuevo, en_seguimiento, caliente, frio, cerrado, respondio, escalado):', lead.estado);
       if (!nuevo) return;
-      const validos = ['nuevo','en_seguimiento','caliente','frio','cerrado','respondio'];
+      const validos = ['nuevo','en_seguimiento','caliente','frio','cerrado','respondio','escalado'];
       if (!validos.includes(nuevo.trim())) { showMsg('Estado no válido.', 'error'); return; }
       patch = { estado: nuevo.trim() };
     }
@@ -1729,6 +1852,66 @@
     div.textContent = str == null ? '' : str;
     return div.innerHTML;
   }
+
+  // ===== VER CONVERSACIÓN =====
+  async function abrirConversacion(lead) {
+    const overlay = document.getElementById('chatOverlay');
+    const body = document.getElementById('chatBody');
+    document.getElementById('chatNombre').textContent = lead.nombre || 'Sin nombre';
+    document.getElementById('chatTel').textContent = lead.telefono || '';
+    body.innerHTML = '<div class="chat-empty">Cargando conversación...</div>';
+    overlay.classList.add('open');
+
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/conversaciones_whatsapp?select=rol,mensaje,created_at&telefono=eq.${encodeURIComponent(lead.telefono)}&order=created_at.asc`;
+      const res = await fetch(url, { headers: await authHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      const msgs = await res.json();
+
+      if (!msgs.length) {
+        body.innerHTML = '<div class="chat-empty">No hay mensajes registrados para este lead.</div>';
+        return;
+      }
+
+      body.innerHTML = msgs.map(m => {
+        const esCliente = (m.rol || '').toLowerCase() === 'user' || (m.rol || '').toLowerCase() === 'cliente';
+        const hora = m.created_at
+          ? new Date(m.created_at).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+          : '';
+        return `<div class="chat-msg ${esCliente ? 'cliente' : 'karina'}">${escapeHtml(m.mensaje)}<span class="ch-time">${hora}</span></div>`;
+      }).join('');
+
+      // scroll al último mensaje
+      body.scrollTop = body.scrollHeight;
+    } catch (err) {
+      console.error(err);
+      body.innerHTML = '<div class="chat-empty">Error al cargar la conversación.</div>';
+    }
+  }
+
+  function cerrarConversacion() {
+    document.getElementById('chatOverlay').classList.remove('open');
+  }
+</script>
+
+<!-- Modal de conversación -->
+<div class="chat-overlay" id="chatOverlay">
+  <div class="chat-modal">
+    <div class="chat-head">
+      <div>
+        <div class="ch-nombre" id="chatNombre">Lead</div>
+        <div class="ch-tel" id="chatTel"></div>
+      </div>
+      <button class="chat-close" onclick="cerrarConversacion()">&times;</button>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+  </div>
+</div>
+<script>
+  // cerrar modal al tocar fuera
+  document.getElementById('chatOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'chatOverlay') cerrarConversacion();
+  });
 </script>
 </body>
 </html>
