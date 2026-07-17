@@ -575,6 +575,25 @@
     font-size: 14px; font-weight: 700;
     display: flex; align-items: center; gap: 8px;
   }
+  .estatus-resumen {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .est-chip {
+    border-radius: 10px;
+    padding: 12px 6px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid var(--border);
+  }
+  .est-chip b { display: block; font-size: 22px; margin-bottom: 2px; }
+  .est-nuevo { background: rgba(90,130,255,0.12); color: #8FB0FF; border-color: rgba(90,130,255,0.35); }
+  .est-tibio { background: rgba(255,200,0,0.12); color: #FFD54A; border-color: rgba(255,200,0,0.35); }
+  .est-caliente { background: rgba(255,92,92,0.14); color: #FF8A8A; border-color: rgba(255,92,92,0.4); }
+  .est-frio { background: rgba(120,160,200,0.1); color: #9BB8D3; border-color: rgba(120,160,200,0.3); }
   .pl-chat-btn {
     width: 100%;
     background: rgba(255,122,48,0.12);
@@ -1007,7 +1026,9 @@
     <input type="text" id="buscadorLeads" class="buscador" placeholder="🔍 Buscar por nombre o teléfono...">
     <div class="panel-filtros" id="panelFiltros">
       <button class="filtro-btn accion active" data-filtro="hoy">🔥 Acción de hoy</button>
+      <button class="filtro-btn" data-filtro="escalados">🔔 Pidió hablar</button>
       <button class="filtro-btn" data-filtro="respondio">Respondieron</button>
+      <button class="filtro-btn" data-filtro="estatus">📊 Estatus</button>
       <button class="filtro-btn" data-filtro="activos">Activos</button>
       <button class="filtro-btn" data-filtro="pausados">Pausados</button>
       <button class="filtro-btn" data-filtro="todos">Todos</button>
@@ -1580,6 +1601,61 @@
         html += renderLeadCards(pausadosResp, hoy);
       }
       if (!html) html = '<div class="loading-text">Nadie ha respondido aún.</div>';
+      listContent.innerHTML = html;
+      return;
+    }
+    else if (filtroActual === 'escalados') {
+      const fechaResp = l => new Date(l.fecha_ultimo_contacto || l.fecha_registro || 0).getTime();
+      const esc = todosLosLeads.filter(l => l.estado === 'escalado')
+        .sort((a, b) => fechaResp(b) - fechaResp(a));
+      let html = '';
+      if (esc.length) {
+        html += `<div class="escalado-banner">🔔 <b>${esc.length}</b> ${esc.length === 1 ? 'lead pidió' : 'leads pidieron'} hablar contigo — el más reciente arriba</div>`;
+        html += renderLeadCards(esc, hoy);
+      } else {
+        html = '<div class="loading-text">Nadie ha pedido hablar contigo por ahora. 🎉</div>';
+      }
+      listContent.innerHTML = html;
+      return;
+    }
+    else if (filtroActual === 'estatus') {
+      const fechaResp = l => new Date(l.fecha_ultimo_contacto || l.fecha_registro || 0).getTime();
+      const activos = todosLosLeads.filter(l => l.estado !== 'cerrado');
+
+      // Categorización
+      const nuevos = activos.filter(l => l.estado === 'nuevo' && !l.ultima_respuesta)
+        .sort((a,b) => fechaResp(b) - fechaResp(a));
+      const tibios = activos.filter(l => (l.estado === 'en_seguimiento' || l.estado === 'respondio' || l.ultima_respuesta) && l.estado !== 'caliente' && l.estado !== 'escalado')
+        .sort((a,b) => fechaResp(b) - fechaResp(a));
+      const calientes = activos.filter(l => l.estado === 'caliente')
+        .sort((a,b) => fechaResp(b) - fechaResp(a));
+      const frios = activos.filter(l => l.estado === 'frio')
+        .sort((a,b) => fechaResp(b) - fechaResp(a));
+
+      let html = `<div class="estatus-resumen">
+        <div class="est-chip est-nuevo"><b>${nuevos.length}</b> Nuevos</div>
+        <div class="est-chip est-tibio"><b>${tibios.length}</b> Tibios</div>
+        <div class="est-chip est-caliente"><b>${calientes.length}</b> Calientes</div>
+        <div class="est-chip est-frio"><b>${frios.length}</b> Fríos</div>
+      </div>`;
+
+      if (calientes.length) {
+        html += `<div class="seccion-sep">🔥 Calientes — listos para comprar (${calientes.length})</div>`;
+        html += renderLeadCards(calientes, hoy);
+      }
+      if (tibios.length) {
+        html += `<div class="seccion-sep">🌤 Tibios — ya respondieron o preguntan (${tibios.length})</div>`;
+        html += renderLeadCards(tibios, hoy);
+      }
+      if (nuevos.length) {
+        html += `<div class="seccion-sep">🆕 Nuevos — recién llegados (${nuevos.length})</div>`;
+        html += renderLeadCards(nuevos, hoy);
+      }
+      if (frios.length) {
+        html += `<div class="seccion-sep">❄️ Fríos — no responden al seguimiento (${frios.length})</div>`;
+        html += renderLeadCards(frios, hoy);
+      }
+      if (html.indexOf('seccion-sep') === -1) html += '<div class="loading-text">No hay leads para categorizar.</div>';
       listContent.innerHTML = html;
       return;
     }
