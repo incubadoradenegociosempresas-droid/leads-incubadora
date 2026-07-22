@@ -1584,19 +1584,23 @@
 
     if (filtroActual === 'hoy') {
       leads = leads.filter(l => {
-        if (l.estado === 'cerrado' || l.seguimiento_pausado) return false;
+        if (l.estado === 'cerrado') return false;
         const respondio = respondioReal(l);
+        // Los que respondieron SÍ aparecen aunque estén pausados (son los que necesitan tu atención)
+        if (respondio) return true;
+        if (l.seguimiento_pausado) return false;
         const esHoy = l.fecha_proximo_seguimiento && l.fecha_proximo_seguimiento.slice(0,10) === hoy;
         const atrasado = l.fecha_proximo_seguimiento && l.fecha_proximo_seguimiento.slice(0,10) < hoy;
-        return respondio || esHoy || atrasado;
+        return esHoy || atrasado;
       });
     }
     else if (filtroActual === 'respondio') {
       const respondidos = todosLosLeads.filter(l => respondioReal(l));
       const fechaResp = l => new Date(l.fecha_ultima_respuesta_cliente || l.fecha_registro || 0).getTime();
-      const activos = respondidos.filter(l => !l.seguimiento_pausado && l.estado !== 'cerrado')
+      // "Por atender" = respondieron y NO están cerrados (aunque estén pausados; la pausa es normal tras responder)
+      const activos = respondidos.filter(l => l.estado !== 'cerrado')
         .sort((a, b) => fechaResp(b) - fechaResp(a));
-      const pausadosResp = respondidos.filter(l => l.seguimiento_pausado || l.estado === 'cerrado')
+      const cerrados = respondidos.filter(l => l.estado === 'cerrado')
         .sort((a, b) => fechaResp(b) - fechaResp(a));
 
       let html = '';
@@ -1604,9 +1608,9 @@
         html += `<div class="conteo-hoy">💬 <b>${activos.length}</b> por atender — el más reciente arriba</div>`;
         html += renderLeadCards(activos, hoy);
       }
-      if (pausadosResp.length) {
-        html += `<div class="seccion-sep">⏸ Pausados / Cerrados (${pausadosResp.length})</div>`;
-        html += renderLeadCards(pausadosResp, hoy);
+      if (cerrados.length) {
+        html += `<div class="seccion-sep">✅ Cerrados (${cerrados.length})</div>`;
+        html += renderLeadCards(cerrados, hoy);
       }
       if (!html) html = '<div class="loading-text">Nadie ha respondido aún.</div>';
       listContent.innerHTML = html;
@@ -1688,7 +1692,7 @@
 
     let encabezado = '';
     if (filtroActual === 'hoy' && !terminoBusqueda) {
-      const respondieron = todosLosLeads.filter(l => respondioReal(l) && l.estado !== 'cerrado' && !l.seguimiento_pausado).length;
+      const respondieron = todosLosLeads.filter(l => respondioReal(l) && l.estado !== 'cerrado').length;
       const atrasados = todosLosLeads.filter(l => l.fecha_proximo_seguimiento && l.fecha_proximo_seguimiento.slice(0,10) < hoy && l.estado !== 'cerrado' && !l.seguimiento_pausado && !respondioReal(l)).length;
       const paraHoy = todosLosLeads.filter(l => l.fecha_proximo_seguimiento && l.fecha_proximo_seguimiento.slice(0,10) === hoy && l.estado !== 'cerrado' && !l.seguimiento_pausado).length;
       encabezado = `<div class="conteo-hoy">📋 Hoy tienes: <b>${respondieron}</b> que respondieron · <b>${atrasados}</b> atrasados · <b>${paraHoy}</b> programados</div>`;
