@@ -632,6 +632,16 @@
   .badge.vendido { background: rgba(61,220,151,0.25); color: var(--success); border: 1px solid rgba(61,220,151,0.4); }
   .badge.atrasado { background: rgba(255,92,92,0.2); color: var(--danger); }
   .badge.hoy { background: rgba(255,122,48,0.2); color: var(--accent); }
+  .filtro-btn.entrantes { background: rgba(43,158,219,0.15); border-color: rgba(43,158,219,0.4); }
+  .filtro-btn.entrantes.active { background: linear-gradient(135deg,#2B9EDB,#0B6EA9); color:#fff; border-color:transparent; }
+  .badge.origen-campana { background: rgba(233,30,140,0.18); color:#FF6FB5; border:1px solid rgba(233,30,140,0.4); }
+  .badge.origen-manual { background: rgba(245,166,35,0.18); color:#F5A623; border:1px solid rgba(245,166,35,0.4); }
+  .badge.origen-whatsapp { background: rgba(61,220,151,0.15); color:var(--success); }
+  .badge.origen-referido { background: rgba(138,143,156,0.18); color:var(--text-dim); }
+  .sub-origen { display:flex; gap:8px; margin:12px 0; flex-wrap:wrap; }
+  .sub-origen button { background:var(--card-2,rgba(255,255,255,0.05)); border:1px solid rgba(255,255,255,0.12); color:var(--text-dim); border-radius:12px; padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .sub-origen button.active { background:linear-gradient(135deg,#2B9EDB,#0B6EA9); color:#fff; border-color:transparent; }
+
 
   .lead-item .meta { color: var(--text-dim); font-size: 12px; }
 
@@ -1025,7 +1035,8 @@
   <div id="listSection" class="card">
     <input type="text" id="buscadorLeads" class="buscador" placeholder="🔍 Buscar por nombre o teléfono...">
     <div class="panel-filtros" id="panelFiltros">
-      <button class="filtro-btn accion active" data-filtro="hoy">🔥 Acción de hoy</button>
+      <button class="filtro-btn entrantes active" data-filtro="entrantes">📥 Entrantes</button>
+      <button class="filtro-btn accion" data-filtro="hoy">🔥 Acción de hoy</button>
       <button class="filtro-btn" data-filtro="escalados">🔔 Pidió hablar</button>
       <button class="filtro-btn" data-filtro="respondio">Respondieron</button>
       <button class="filtro-btn" data-filtro="estatus">📊 Estatus</button>
@@ -1487,7 +1498,8 @@
   /* ───────── PANEL DE GESTIÓN ───────── */
   const toggleListBtn = document.getElementById('toggleListBtn');
   const listSection = document.getElementById('listSection');
-  let filtroActual = 'hoy';
+  let filtroActual = 'entrantes';
+  let origenActual = 'todos';
   let todosLosLeads = [];
   let terminoBusqueda = '';
 
@@ -1567,6 +1579,46 @@
     const listContent = document.getElementById('listContent');
     const hoy = hoyStr();
     let leads = todosLosLeads;
+
+    // ===== VISTA ENTRANTES: todos los leads, más nuevos arriba, con origen =====
+    if (filtroActual === 'entrantes' && !terminoBusqueda) {
+      // Ordenar por lo más reciente: usa la fecha más nueva entre respuesta, contacto o registro
+      const fechaMasReciente = l => new Date(
+        l.fecha_ultima_respuesta_cliente || l.fecha_ultimo_contacto || l.fecha_registro || 0
+      ).getTime();
+
+      let lista = [...todosLosLeads].sort((a,b) => fechaMasReciente(b) - fechaMasReciente(a));
+
+      // Sub-filtro por origen
+      if (origenActual === 'campana') {
+        lista = lista.filter(l => (l.origen || '').toLowerCase().includes('meta') || (l.origen || '').toLowerCase().includes('ads') || (l.origen || '').toLowerCase().includes('campa'));
+      } else if (origenActual === 'manual') {
+        lista = lista.filter(l => (l.origen || '').toLowerCase() === 'manual');
+      } else if (origenActual === 'directo') {
+        lista = lista.filter(l => { const o = (l.origen || '').toLowerCase(); return o === 'whatsapp' || o === 'referido' || !o; });
+      }
+
+      // Contadores por origen (sobre TODOS, no filtrado)
+      const nCamp = todosLosLeads.filter(l => { const o=(l.origen||'').toLowerCase(); return o.includes('meta')||o.includes('ads')||o.includes('campa'); }).length;
+      const nMan = todosLosLeads.filter(l => (l.origen||'').toLowerCase()==='manual').length;
+      const nDir = todosLosLeads.filter(l => { const o=(l.origen||'').toLowerCase(); return o==='whatsapp'||o==='referido'||!o; }).length;
+
+      let html = `<div class="sub-origen">
+        <button data-origen="todos" class="${origenActual==='todos'?'active':''}">Todos (${todosLosLeads.length})</button>
+        <button data-origen="campana" class="${origenActual==='campana'?'active':''}">📣 Campaña (${nCamp})</button>
+        <button data-origen="manual" class="${origenActual==='manual'?'active':''}">✍️ Manual (${nMan})</button>
+        <button data-origen="directo" class="${origenActual==='directo'?'active':''}">💬 Directo (${nDir})</button>
+      </div>`;
+      html += `<div class="conteo-hoy">📥 <b>${lista.length}</b> ${lista.length===1?'lead':'leads'} — el más reciente arriba</div>`;
+
+      if (lista.length) {
+        html += renderLeadCards(lista, hoy);
+      } else {
+        html += '<div class="loading-text">No hay leads en esta vista.</div>';
+      }
+      listContent.innerHTML = html;
+      return;
+    }
 
     if (terminoBusqueda) {
       leads = todosLosLeads.filter(l =>
@@ -1746,6 +1798,13 @@
 
       const escalado = lead.estado === 'escalado';
       let badge = `<span class="badge ${lead.estado}">${estadoLabels[lead.estado] || lead.estado}</span>`;
+      // Badge de origen (campaña / manual / directo)
+      const oLower = (lead.origen || '').toLowerCase();
+      let origenBadge = '';
+      if (oLower.includes('meta') || oLower.includes('ads') || oLower.includes('campa')) origenBadge = '<span class="badge origen-campana">📣 Campaña</span>';
+      else if (oLower === 'manual') origenBadge = '<span class="badge origen-manual">✍️ Manual</span>';
+      else if (oLower === 'referido') origenBadge = '<span class="badge origen-referido">🤝 Referido</span>';
+      else origenBadge = '<span class="badge origen-whatsapp">💬 Directo</span>';
       if (escalado) badge = `<span class="badge escalado">🔔 Quiere hablar contigo</span>`;
       else if (atrasado) badge = `<span class="badge atrasado">⚠️ Atrasado</span> ` + badge;
       else if (esHoy && !respondio) badge = `<span class="badge hoy">📅 Hoy</span> ` + badge;
@@ -1771,7 +1830,7 @@
               <div class="pl-nombre">${escapeHtml(lead.nombre)}</div>
               <div class="pl-tel">${escapeHtml(lead.telefono)}${lead.servicio_interes ? ' · ' + escapeHtml(lead.servicio_interes) : ''}</div>
             </div>
-            <div style="text-align:right;">${badge}</div>
+            <div style="text-align:right;">${origenBadge} ${badge}</div>
           </div>
           <div class="pl-info">
             <span>Seguimientos: <b>${lead.seguimientos_enviados ?? 0}</b></span>
@@ -1799,6 +1858,13 @@
   }
 
   document.getElementById('listContent').addEventListener('click', async (e) => {
+    // Sub-filtro de origen (Todos/Campaña/Manual/Directo)
+    const origenBtn = e.target.closest('[data-origen]');
+    if (origenBtn) {
+      origenActual = origenBtn.dataset.origen;
+      renderLeads();
+      return;
+    }
     const btn = e.target.closest('[data-accion]');
     if (!btn) return;
     const id = btn.dataset.id;
