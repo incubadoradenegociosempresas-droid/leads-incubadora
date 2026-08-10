@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - Agente WhatsApp IA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .auth-form, .dashboard {
+            padding: 40px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .button {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .button-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102,126,234,0.4);
+        }
+
+        .button-secondary {
+            background: #f5f5f5;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .button-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .button-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .button-danger:hover {
+            background: #ff5252;
+        }
+
+        .button-stripe {
+            background: #635bff;
+            color: white;
+        }
+
+        .button-stripe:hover {
+            background: #524dd0;
+        }
+
+        .toggle-auth {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .toggle-auth button {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        .error {
+            background: #ffe0e0;
+            color: #c92a2a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border-left: 4px solid #c92a2a;
+        }
+
+        .success {
+            background: #e7f5e7;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .dashboard-section {
+            margin-bottom: 30px;
+        }
+
+        .dashboard-section h2 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-card {
+            background: #f8f9fb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: #333;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .plan-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .divider {
+            border-top: 1px solid #e0e0e0;
+            margin: 20px 0;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- LOGIN / REGISTRO -->
+        <div class="auth-form" id="authForm">
+            <h1 id="authTitle">Inicia Sesión</h1>
+            <p class="subtitle">Accede a tu panel de agente WhatsApp</p>
+
+            <div id="authError" class="error hidden"></div>
+
+            <div class="form-group">
+                <label for="authEmail">Email</label>
+                <input type="email" id="authEmail" placeholder="tu@email.com">
+            </div>
+
+            <div class="form-group" id="companyNameGroup" class="hidden">
+                <label for="companyName">Nombre de tu empresa</label>
+                <input type="text" id="companyName" placeholder="Mi empresa">
+            </div>
+
+            <div class="form-group">
+                <label for="authPassword">Contraseña</label>
+                <input type="password" id="authPassword" placeholder="••••••••">
+            </div>
+
+            <button class="button button-primary" id="authSubmit">Iniciar Sesión</button>
+
+            <div class="toggle-auth">
+                ¿No tienes cuenta? <button type="button" onclick="toggleAuthMode()">Crear cuenta</button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div class="dashboard hidden" id="dashboard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <div>
+                    <h1 id="userGreeting">Hola!</h1>
+                    <p class="subtitle" id="planDisplay">Plan Básico</p>
+                </div>
+                <button class="button button-secondary" style="width: auto; padding: 8px 16px;" onclick="logout()">Salir</button>
+            </div>
+
+            <!-- PLAN Y SUSCRIPCIÓN -->
+            <div class="dashboard-section">
+                <h2>Tu Plan</h2>
+                <div id="planInfo"></div>
+                <div class="divider"></div>
+                <button class="button button-stripe" id="upgradeBtn">Ir a Pagar</button>
+            </div>
+
+            <!-- CONVERSACIONES -->
+            <div class="dashboard-section">
+                <h2>Uso Este Mes</h2>
+                <div class="stat-card">
+                    <span class="stat-label">Conversaciones Usadas</span>
+                    <span class="stat-value"><span id="conversationCount">0</span> / <span id="conversationLimit">250</span></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- NÚMERO WHATSAPP -->
+            <div class="dashboard-section">
+                <h2>Tu Agente</h2>
+                <div class="stat-card">
+                    <span class="stat-label">Estado</span>
+                    <span class="stat-value" id="agentStatus">Activo ✓</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ytxnmscxyjttqftmznqj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eG5tc2N4eWp0dHFmdG16bnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTc1NDcsImV4cCI6MjA5NTczMzU0N30.kTRYprMRKaYya8uczvEWAk6FFISdRjC7YpbuPH4n0wA';
+
+        const STRIPE_LINKS = {
+            'plan_basico': 'https://buy.stripe.com/[TU_LINK_BASICO]',
+            'plan_pro': 'https://buy.stripe.com/[TU_LINK_PRO]',
+            'plan_business': 'https://buy.stripe.com/[TU_LINK_BUSINESS]'
+        };
+
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let isSignupMode = false;
+        let currentUser = null;
+        let currentTenant = null;
+
+        // INICIALIZACIÓN
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            setupEventListeners();
+        });
+
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user) {
+                currentUser = user;
+                await loadTenantData();
+                showDashboard();
+            } else {
+                showAuthForm();
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('authSubmit').addEventListener('click', handleAuth);
+            document.getElementById('authEmail').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleAuth();
+            });
+            document.getElementById('authPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleAuth();
+            });
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const errorEl = document.getElementById('authError');
+
+            if (!email || !password) {
+                showError('Completa todos los campos', errorEl);
+                return;
+            }
+
+            errorEl.classList.add('hidden');
+
+            try {
+                if (isSignupMode) {
+                    const companyName = document.getElementById('companyName').value.trim();
+                    if (!companyName) {
+                        showError('Ingresa el nombre de tu empresa', errorEl);
+                        return;
+                    }
+
+                    // Signup
+                    const { data: { user }, error: signupError } = await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            data: { company_name: companyName }
+                        }
+                    });
+
+                    if (signupError) throw signupError;
+
+                    // Crear tenant en saas_tenants
+                    const { error: tenantError } = await supabase
+                        .from('saas_tenants')
+                        .insert([{
+                            email,
+                            nombre: companyName,
+                            plan: 'plan_basico',
+                            activo: false,
+                            conversaciones_usadas: 0
+                        }]);
+
+                    if (tenantError) throw tenantError;
+
+                    showSuccess('Cuenta creada. Revisa tu email para confirmar.', errorEl);
+                    setTimeout(() => toggleAuthMode(), 2000);
+
+                } else {
+                    // Login
+                    const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+
+                    if (loginError) throw loginError;
+
+                    currentUser = user;
+                    await loadTenantData();
+                    showDashboard();
+                }
+            } catch (error) {
+                showError(error.message, errorEl);
+            }
+        }
+
+        async function loadTenantData() {
+            const { data, error } = await supabase
+                .from('saas_tenants')
+                .select('*')
+                .eq('email', currentUser.email)
+                .single();
+
+            if (error) console.error('Error loading tenant:', error);
+            else currentTenant = data;
+        }
+
+        function showAuthForm() {
+            document.getElementById('authForm').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('authForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            if (!currentTenant) return;
+
+            const planNames = {
+                'plan_basico': 'Plan Básico - $580/mes',
+                'plan_pro': 'Plan Pro - $2,900/mes',
+                'plan_business': 'Plan Business - $7,540/mes'
+            };
+
+            const planLimits = {
+                'plan_basico': 250,
+                'plan_pro': 1000,
+                'plan_business': 2000
+            };
+
+            const planName = planNames[currentTenant.plan] || 'Plan Básico';
+            const limit = planLimits[currentTenant.plan] || 250;
+            const used = currentTenant.conversaciones_usadas || 0;
+            const percentage = (used / limit) * 100;
+
+            document.getElementById('userGreeting').textContent = `Hola, ${currentTenant.nombre}!`;
+            document.getElementById('planDisplay').textContent = planName;
+
+            // Info del plan
+            const planInfo = document.getElementById('planInfo');
+            planInfo.innerHTML = `
+                <div class="plan-badge">${currentTenant.plan === 'plan_basico' ? '🎯 BÁSICO' : currentTenant.plan === 'plan_pro' ? '⭐ PRO' : '👑 BUSINESS'}</div>
+                <div class="stat-card">
+                    <span class="stat-label">Estado de Pago</span>
+                    <span class="stat-value">${currentTenant.activo ? '✓ Activo' : '⏳ Pendiente'}</span>
+                </div>
+            `;
+
+            // Conversaciones
+            document.getElementById('conversationCount').textContent = used;
+            document.getElementById('conversationLimit').textContent = limit;
+            document.getElementById('progressBar').style.width = Math.min(percentage, 100) + '%';
+
+            // Botón de pago
+            const upgradeBtn = document.getElementById('upgradeBtn');
+            if (currentTenant.activo) {
+                upgradeBtn.textContent = 'Ir al Panel de Configuración';
+                upgradeBtn.onclick = () => alert('Panel en desarrollo');
+            } else {
+                upgradeBtn.textContent = 'Activar Mi Plan Ahora';
+                upgradeBtn.onclick = () => goToCheckout(currentTenant.plan);
+            }
+        }
+
+        function goToCheckout(plan) {
+            const links = {
+                'plan_basico': 'https://buy.stripe.com/test_14k3eS2w518t5X2000',
+                'plan_pro': 'https://buy.stripe.com/test_4gw16K2w51FD7Lm003',
+                'plan_business': 'https://buy.stripe.com/test_4gw3eS4gF4yl4AE144'
+            };
+
+            window.location.href = links[plan] || links['plan_basico'];
+        }
+
+        function toggleAuthMode() {
+            isSignupMode = !isSignupMode;
+            const title = document.getElementById('authTitle');
+            const submit = document.getElementById('authSubmit');
+            const toggle = document.querySelector('.toggle-auth button');
+            const companyGroup = document.getElementById('companyNameGroup');
+
+            if (isSignupMode) {
+                title.textContent = 'Crea tu Cuenta';
+                submit.textContent = 'Crear Cuenta';
+                toggle.textContent = 'Ya tengo cuenta';
+                companyGroup.classList.remove('hidden');
+            } else {
+                title.textContent = 'Inicia Sesión';
+                submit.textContent = 'Iniciar Sesión';
+                toggle.textContent = 'Crear cuenta';
+                companyGroup.classList.add('hidden');
+            }
+
+            document.getElementById('authError').classList.add('hidden');
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            currentTenant = null;
+            showAuthForm();
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authPassword').value = '';
+            document.getElementById('companyName').value = '';
+        }
+
+        function showError(message, element) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+        }
+
+        function showSuccess(message, element) {
+            element.textContent = message;
+            element.classList.remove('hidden', 'error');
+            element.classList.add('success');
+        }
+    </script>
+</body>
+</html>
