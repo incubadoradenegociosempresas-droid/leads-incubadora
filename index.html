@@ -856,6 +856,27 @@
   #listSection.show { display: block; }
 
   .loading-text { color: var(--text-dim); font-size: 13px; text-align: center; padding: 12px; }
+  /* ── Publicidad ── */
+  .pub-box { background: rgba(255,122,48,0.08); border: 1px solid rgba(255,122,48,0.35); border-radius: var(--radius); padding: 12px; margin: 12px 0; }
+  .pub-titulo { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+  .pub-msg { white-space: pre-wrap; font-size: 13px; line-height: 1.45; background: var(--bg); border-radius: 8px; padding: 10px; }
+  .pub-nota { font-size: 11px; color: var(--text-dim); margin-top: 8px; line-height: 1.4; }
+  .pub-filtros { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+  .pub-filtros label { font-size: 11px; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px; margin: 0; }
+  .pub-filtros select, .pub-filtros input { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 9px 8px; font-size: 13px; font-family: inherit; }
+  .pub-barra { position: sticky; top: 0; z-index: 5; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .pub-barra #pubContador { width: 100%; font-size: 13px; }
+  .pub-barra .pl-btn { flex: 1 1 45%; }
+  .pub-barra .pl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pub-fila { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin: 0 0 6px; cursor: pointer; }
+  .pub-fila input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
+  .pub-datos { display: flex; flex-direction: column; min-width: 0; font-size: 14px; }
+  .pub-datos b, .pub-datos small { overflow-wrap: anywhere; }
+  .pub-datos small { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+  .pub-res { border: 1px solid var(--success); background: rgba(61,220,151,0.08); border-radius: 8px; padding: 10px; font-size: 12px; line-height: 1.5; margin-bottom: 10px; overflow-wrap: anywhere; }
+  .pub-res.error { border-color: var(--danger); background: rgba(255,92,92,0.08); }
+  .pub-res-tit { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .pub-res-sec { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -1070,6 +1091,7 @@
       <button class="filtro-btn" data-filtro="pausados">Pausados</button>
       <button class="filtro-btn" data-filtro="terminado">🏁 Terminado</button>
       <button class="filtro-btn" data-filtro="todos">Todos</button>
+      <button class="filtro-btn" data-filtro="publicidad">📣 Publicidad</button>
     </div>
     <div id="listContent" class="loading-text">Cargando...</div>
   </div>
@@ -1603,6 +1625,7 @@
 
   function renderLeads() {
     const listContent = document.getElementById('listContent');
+    if (filtroActual === 'publicidad') { renderPublicidad(); return; }
     const hoy = hoyStr();
     let leads = todosLosLeads;
 
@@ -2052,6 +2075,213 @@
     div.textContent = str == null ? '' : str;
     return div.innerHTML;
   }
+
+  /* ═══════════ PUBLICIDAD (envío de plantilla desde el 2911) ═══════════ */
+  const PUB_WEBHOOK = 'https://incubadoraempresas2026.app.n8n.cloud/webhook/crm-publicidad';
+  const PUB_MAX = 50;
+  const PUB_DIAS = 14;
+  const PUB_TEXTO = 'Hola {nombre}, soy Karina de Incubadora de Empresas.\n\nLanzamos un plan nuevo: tu agente de IA que contesta tu WhatsApp 24/7, con CRM incluido, por $5,000 de creación y $2,500 al mes.\n\n¿Te cuento cómo funcionaría en tu negocio?\n\n[Sí, cuéntame]  [No me interesa]';
+  let pubLeads = null;
+  let pubCargando = false;
+  let pubEnviando = false;
+  let pubSel = new Set();
+  let pubResultado = '';
+  let pubF = { estado: 'todos', servicio: 'todos', desde: '', hasta: '' };
+
+  async function pubCargar() {
+    if (pubCargando) return;
+    pubCargando = true;
+    try {
+      const campos = 'id,nombre,telefono,estado,servicio_interes,fecha_registro,es_prueba,pago_confirmado,ultima_respuesta,fecha_ultima_publicidad';
+      let todos = [], offset = 0;
+      while (true) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=${campos}&order=fecha_registro.desc&limit=1000&offset=${offset}`, { headers: await authHeaders() });
+        if (!res.ok) throw new Error(await res.text());
+        const parte = await res.json();
+        todos = todos.concat(parte);
+        if (parte.length < 1000) break;
+        offset += 1000;
+      }
+      pubLeads = todos;
+    } catch (err) {
+      console.error(err);
+      pubLeads = [];
+      pubResultado = '<div class="pub-res error">No se pudieron cargar los leads. Recarga la página.</div>';
+    }
+    pubCargando = false;
+    if (filtroActual === 'publicidad') renderPublicidad();
+  }
+
+  // Mismas reglas que aplica el servidor: a estos NO se les manda publicidad.
+  function pubMotivo(l) {
+    if (['cerrado', 'perdido', 'no_interesado'].includes(l.estado)) return 'estado ' + l.estado;
+    if (l.pago_confirmado) return 'ya es cliente';
+    if (/^\s*(ya\s+)?no(\s+me\s+interesa|,?\s+gracias)/i.test(l.ultima_respuesta || '')) return 'dijo que no le interesa';
+    if (l.fecha_ultima_publicidad && (Date.now() - new Date(l.fecha_ultima_publicidad).getTime()) < PUB_DIAS * 86400000) return 'ya recibió publicidad';
+    if (!/^52\d{10}$/.test(String(l.telefono || ''))) return 'teléfono inválido';
+    return '';
+  }
+
+  function pubLista() {
+    return (pubLeads || []).filter(l => {
+      if (pubMotivo(l)) return false;
+      if (pubF.estado !== 'todos' && l.estado !== pubF.estado) return false;
+      const serv = l.servicio_interes || '';
+      if (pubF.servicio === '__sin__' && serv) return false;
+      if (pubF.servicio !== 'todos' && pubF.servicio !== '__sin__' && serv !== pubF.servicio) return false;
+      const f = (l.fecha_registro || '').slice(0, 10);
+      if (pubF.desde && f < pubF.desde) return false;
+      if (pubF.hasta && f > pubF.hasta) return false;
+      if (terminoBusqueda && !((l.nombre || '').toLowerCase().includes(terminoBusqueda) || (l.telefono || '').includes(terminoBusqueda))) return false;
+      return true;
+    });
+  }
+
+  function pubContar(campo) {
+    const m = new Map();
+    (pubLeads || []).filter(l => !pubMotivo(l)).forEach(l => { const k = l[campo] || ''; m.set(k, (m.get(k) || 0) + 1); });
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }
+
+  function pubActualizarBarra() {
+    const n = pubSel.size;
+    const c = document.getElementById('pubContador');
+    if (c) c.innerHTML = `<b>${n}</b> de ${PUB_MAX} seleccionados`;
+    const b = document.getElementById('pubEnviarBtn');
+    if (b) { b.disabled = !n || pubEnviando; b.textContent = pubEnviando ? 'Enviando…' : (n ? `📣 Enviar a ${n}` : '📣 Enviar'); }
+    const p = document.getElementById('pubPreviewBtn');
+    if (p) p.disabled = !n || pubEnviando;
+  }
+
+  function renderPublicidad() {
+    const listContent = document.getElementById('listContent');
+    if (pubLeads === null) {
+      listContent.innerHTML = '<div class="loading-text">Cargando todos tus leads...</div>';
+      pubCargar();
+      return;
+    }
+    const elegibles = pubLeads.filter(l => !pubMotivo(l));
+    const excluidos = pubLeads.length - elegibles.length;
+    const lista = pubLista();
+    const optEstados = pubContar('estado').map(([k, n]) => `<option value="${escapeHtml(k)}" ${pubF.estado === k ? 'selected' : ''}>${escapeHtml(estadoLabels[k] || k)} (${n})</option>`).join('');
+    const optServ = pubContar('servicio_interes').map(([k, n]) => k
+      ? `<option value="${escapeHtml(k)}" ${pubF.servicio === k ? 'selected' : ''}>${escapeHtml(k)} (${n})</option>`
+      : `<option value="__sin__" ${pubF.servicio === '__sin__' ? 'selected' : ''}>Sin servicio registrado (${n})</option>`).join('');
+
+    let html = `<div class="pub-box">
+      <div class="pub-titulo">📣 Mensaje de publicidad · sale del 2911</div>
+      <div class="pub-msg">${escapeHtml(PUB_TEXTO)}</div>
+      <div class="pub-nota">Cada mensaje tiene costo de Meta. Máximo ${PUB_MAX} por tanda. No se envía a cerrados, clientes, quien dijo que no le interesa, ni a quien ya recibió publicidad en los últimos ${PUB_DIAS} días (${excluidos} excluidos).</div>
+    </div>
+    <div class="pub-filtros">
+      <label>Estado<select data-pubf="estado"><option value="todos">Todos (${elegibles.length})</option>${optEstados}</select></label>
+      <label>Servicio de interés<select data-pubf="servicio"><option value="todos">Todos</option>${optServ}</select></label>
+      <label>Registrado desde<input type="date" data-pubf="desde" value="${pubF.desde}"></label>
+      <label>Registrado hasta<input type="date" data-pubf="hasta" value="${pubF.hasta}"></label>
+    </div>
+    <div class="pub-barra">
+      <span id="pubContador"></span>
+      <button type="button" class="pl-btn" data-pubacc="sel">Marcar los primeros ${PUB_MAX}</button>
+      <button type="button" class="pl-btn" data-pubacc="limpiar">Quitar todos</button>
+      <button type="button" class="pl-btn" id="pubPreviewBtn" data-pubacc="preview">👁 Revisar sin enviar</button>
+      <button type="button" class="pl-btn ok" id="pubEnviarBtn" data-pubacc="enviar">📣 Enviar</button>
+    </div>
+    <div id="pubResultado">${pubResultado}</div>
+    <div class="conteo-hoy"><b>${lista.length}</b> ${lista.length === 1 ? 'lead coincide' : 'leads coinciden'} con el filtro</div>`;
+
+    html += lista.length ? lista.map(l => `
+      <label class="pub-fila">
+        <input type="checkbox" data-pubid="${l.id}" ${pubSel.has(l.id) ? 'checked' : ''}>
+        <span class="pub-datos">
+          <b>${escapeHtml(l.nombre || 'Sin nombre')}</b>
+          <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')}${l.servicio_interes ? ' · ' + escapeHtml(l.servicio_interes) : ''} · ${(l.fecha_registro || '').slice(0, 10)}</small>
+        </span>
+      </label>`).join('') : '<div class="loading-text">Ningún lead coincide con el filtro.</div>';
+
+    listContent.innerHTML = html;
+    pubActualizarBarra();
+  }
+
+  function pubListaHtml(titulo, arr, fn) {
+    if (!arr || !arr.length) return '';
+    return `<div class="pub-res-sec"><b>${titulo} (${arr.length})</b><br>${arr.map(fn).join('<br>')}</div>`;
+  }
+
+  async function pubEnviar(prueba) {
+    const ids = [...pubSel];
+    if (!ids.length || pubEnviando) return;
+    if (!prueba) {
+      const h = new Date().getHours();
+      const aviso = (h < 9 || h >= 20) ? '\n\n⚠️ Son fuera de horario (9:00 a 20:00). Considera enviarlo mañana.' : '';
+      if (!confirm(`Vas a enviar el mensaje de publicidad a ${ids.length} ${ids.length === 1 ? 'lead' : 'leads'} desde el 2911.\n\nEsto no se puede deshacer y cada mensaje tiene costo de Meta.${aviso}\n\n¿Enviar?`)) return;
+    }
+    pubEnviando = true;
+    pubActualizarBarra();
+    const caja = document.getElementById('pubResultado');
+    if (caja) caja.innerHTML = `<div class="pub-res">${prueba ? 'Revisando…' : 'Enviando, no cierres esta pantalla…'}</div>`;
+    try {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) throw new Error('Tu sesión expiró. Vuelve a entrar.');
+      const res = await fetch(PUB_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: data.session.access_token, lead_ids: ids, prueba: !!prueba })
+      });
+      if (!res.ok) throw new Error('El servidor respondió ' + res.status);
+      const r = await res.json();
+      if (!r.ok) throw new Error(r.error || 'No se pudo procesar.');
+      const fila = x => `${escapeHtml(x.nombre || 'Sin nombre')} · ${escapeHtml(x.telefono || '')}`;
+      if (r.prueba) {
+        pubResultado = `<div class="pub-res">
+          <div class="pub-res-tit">👁 Revisión (no se envió nada)</div>
+          ${pubListaHtml('Lo recibirían', r.enviables, x => `${fila(x)} → <i>${escapeHtml(x.saludo)}…</i>`) || 'Nadie de la selección puede recibirlo.'}
+          ${pubListaHtml('No lo recibirían', r.excluidos, x => `${fila(x)} — ${escapeHtml(x.motivo)}`)}
+        </div>`;
+      } else {
+        const nOk = (r.enviados || []).length, nMal = (r.fallidos || []).length;
+        pubResultado = `<div class="pub-res ${nMal && !nOk ? 'error' : ''}">
+          <div class="pub-res-tit">${nOk ? '✅' : '⚠️'} Enviados: ${nOk} · Fallidos: ${nMal} · Excluidos: ${(r.excluidos || []).length}</div>
+          ${r.registro_ok === false ? '<div>⚠️ Los mensajes salieron, pero no se pudieron registrar en el historial. Avísale a soporte antes de volver a enviar.</div>' : ''}
+          ${pubListaHtml('Fallidos', r.fallidos, x => `${fila(x)} — ${escapeHtml(x.error)}`)}
+          ${pubListaHtml('Excluidos', r.excluidos, x => `${fila(x)} — ${escapeHtml(x.motivo)}`)}
+        </div>`;
+        pubSel.clear();
+        pubEnviando = false;
+        pubLeads = null;
+        renderPublicidad();
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      pubResultado = `<div class="pub-res error">No se completó: ${escapeHtml(err.message)}. Antes de reintentar, toca "Recargar" para ver a quién sí le llegó.<br><button type="button" class="pl-btn" data-pubacc="recargar">Recargar</button></div>`;
+    }
+    pubEnviando = false;
+    renderPublicidad();
+  }
+
+  document.getElementById('listContent').addEventListener('change', (e) => {
+    const f = e.target.closest('[data-pubf]');
+    if (f) { pubF[f.dataset.pubf] = f.value; renderPublicidad(); return; }
+    const c = e.target.closest('[data-pubid]');
+    if (c) {
+      if (c.checked) {
+        if (pubSel.size >= PUB_MAX) { c.checked = false; showMsg(`Máximo ${PUB_MAX} por tanda.`, 'error'); return; }
+        pubSel.add(c.dataset.pubid);
+      } else pubSel.delete(c.dataset.pubid);
+      pubActualizarBarra();
+    }
+  });
+
+  document.getElementById('listContent').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pubacc]');
+    if (!b) return;
+    const acc = b.dataset.pubacc;
+    if (acc === 'sel') { pubSel = new Set(pubLista().slice(0, PUB_MAX).map(l => l.id)); renderPublicidad(); }
+    else if (acc === 'limpiar') { pubSel.clear(); renderPublicidad(); }
+    else if (acc === 'recargar') { pubResultado = ''; pubLeads = null; renderPublicidad(); }
+    else if (acc === 'preview') pubEnviar(true);
+    else if (acc === 'enviar') pubEnviar(false);
+  });
 </script>
 
 <div class="chat-overlay" id="chatOverlay">
