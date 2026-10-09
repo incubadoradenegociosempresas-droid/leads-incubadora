@@ -877,6 +877,11 @@
   .pub-res.error { border-color: var(--danger); background: rgba(255,92,92,0.08); }
   .pub-res-tit { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
   .pub-res-sec { margin-top: 8px; }
+  .pub-env { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin: 0 0 6px; text-align: left; }
+  .pub-env.resp { border-color: var(--success); background: rgba(61,220,151,0.06); }
+  .pub-env .pl-btn { flex: none; }
+  .pub-env-resp { color: var(--success); font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
+  .pub-box + .pub-filtros + .buscador, .estatus-resumen + .buscador { margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -2087,12 +2092,14 @@
   let pubSel = new Set();
   let pubResultado = '';
   let pubF = { estado: 'todos', servicio: 'todos', desde: '', hasta: '' };
+  let pubVista = 'enviar';
+  let pubSoloResp = false;
 
   async function pubCargar() {
     if (pubCargando) return;
     pubCargando = true;
     try {
-      const campos = 'id,nombre,telefono,estado,servicio_interes,fecha_registro,es_prueba,pago_confirmado,ultima_respuesta,fecha_ultima_publicidad';
+      const campos = 'id,nombre,telefono,estado,servicio_interes,fecha_registro,es_prueba,pago_confirmado,ultima_respuesta,fecha_ultima_publicidad,fecha_ultima_respuesta_cliente';
       let todos = [], offset = 0;
       while (true) {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=${campos}&order=fecha_registro.desc&limit=1000&offset=${offset}`, { headers: await authHeaders() });
@@ -2160,6 +2167,12 @@
       pubCargar();
       return;
     }
+    const nEnviados = pubLeads.filter(l => l.fecha_ultima_publicidad).length;
+    const tabs = `<div class="sub-origen">
+      <button type="button" data-pubvista="enviar" class="${pubVista === 'enviar' ? 'active' : ''}">📣 Enviar</button>
+      <button type="button" data-pubvista="enviados" class="${pubVista === 'enviados' ? 'active' : ''}">📬 Enviados (${nEnviados})</button>
+    </div>`;
+    if (pubVista === 'enviados') { listContent.innerHTML = tabs + pubEnviadosHtml(); return; }
     const elegibles = pubLeads.filter(l => !pubMotivo(l));
     const excluidos = pubLeads.length - elegibles.length;
     const lista = pubLista();
@@ -2168,7 +2181,7 @@
       ? `<option value="${escapeHtml(k)}" ${pubF.servicio === k ? 'selected' : ''}>${escapeHtml(k)} (${n})</option>`
       : `<option value="__sin__" ${pubF.servicio === '__sin__' ? 'selected' : ''}>Sin servicio registrado (${n})</option>`).join('');
 
-    let html = `<div class="pub-box">
+    let html = tabs + `<div class="pub-box">
       <div class="pub-titulo">📣 Mensaje de publicidad · sale del 2911</div>
       <div class="pub-msg">${escapeHtml(PUB_TEXTO)}</div>
       <div class="pub-nota">Cada mensaje tiene costo de Meta. Máximo ${PUB_MAX} por tanda. No se envía a cerrados, clientes, quien dijo que no le interesa, ni a quien ya recibió publicidad en los últimos ${PUB_DIAS} días (${excluidos} excluidos).</div>
@@ -2179,6 +2192,7 @@
       <label>Registrado desde<input type="date" data-pubf="desde" value="${pubF.desde}"></label>
       <label>Registrado hasta<input type="date" data-pubf="hasta" value="${pubF.hasta}"></label>
     </div>
+    <input type="text" class="buscador" data-pubbuscar placeholder="🔍 Buscar por nombre o teléfono..." value="${escapeHtml(terminoBusqueda)}">
     <div class="pub-barra">
       <span id="pubContador"></span>
       <button type="button" class="pl-btn" data-pubacc="sel">Marcar los primeros ${PUB_MAX}</button>
@@ -2200,6 +2214,43 @@
 
     listContent.innerHTML = html;
     pubActualizarBarra();
+  }
+
+  function pubRespondio(l) {
+    return !!(l.fecha_ultima_publicidad && l.fecha_ultima_respuesta_cliente && new Date(l.fecha_ultima_respuesta_cliente) > new Date(l.fecha_ultima_publicidad));
+  }
+
+  function pubEnviadosHtml() {
+    const todos = pubLeads.filter(l => l.fecha_ultima_publicidad)
+      .sort((a, b) => (pubRespondio(b) - pubRespondio(a)) || (new Date(b.fecha_ultima_respuesta_cliente || b.fecha_ultima_publicidad) - new Date(a.fecha_ultima_respuesta_cliente || a.fecha_ultima_publicidad)));
+    const resp = todos.filter(pubRespondio);
+    const noInt = resp.filter(l => /^\s*(ya\s+)?no(\s+me\s+interesa|,?\s+gracias)/i.test(l.ultima_respuesta || '')).length;
+    const pct = todos.length ? Math.round(resp.length * 100 / todos.length) : 0;
+    let lista = pubSoloResp ? resp : todos;
+    if (terminoBusqueda) lista = lista.filter(l => (l.nombre || '').toLowerCase().includes(terminoBusqueda) || (l.telefono || '').includes(terminoBusqueda));
+    let html = `<div class="estatus-resumen">
+        <div class="est-chip est-nuevo"><b>${todos.length}</b> Enviados</div>
+        <div class="est-chip est-caliente"><b>${resp.length}</b> Respondieron (${pct}%)</div>
+        <div class="est-chip est-frio"><b>${noInt}</b> No les interesa</div>
+      </div>
+      <input type="text" class="buscador" data-pubbuscar placeholder="🔍 Buscar por nombre o teléfono..." value="${escapeHtml(terminoBusqueda)}">
+      <div class="pub-barra">
+        <button type="button" class="pl-btn" data-pubacc="soloresp">${pubSoloResp ? 'Ver todos los enviados' : 'Ver solo los que respondieron'}</button>
+        <button type="button" class="pl-btn" data-pubacc="recargar">🔄 Actualizar</button>
+      </div>`;
+    if (!lista.length) return html + '<div class="loading-text">' + (todos.length ? 'Nadie en esta vista todavía.' : 'Aún no has enviado publicidad.') + '</div>';
+    return html + lista.map(l => {
+      const r = pubRespondio(l);
+      const envio = new Date(l.fecha_ultima_publicidad).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      return `<div class="pub-env ${r ? 'resp' : ''}">
+        <div class="pub-datos">
+          <b>${escapeHtml(l.nombre || 'Sin nombre')}</b>
+          <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')} · enviado ${envio}</small>
+          ${r ? `<span class="pub-env-resp">💬 Respondió ${tiempoRelativo(l.fecha_ultima_respuesta_cliente)}: "${escapeHtml(l.ultima_respuesta || '')}"</span>` : '<small>Sin respuesta</small>'}
+        </div>
+        <button type="button" class="pl-btn" data-pubchat="${l.id}">💬 Ver</button>
+      </div>`;
+    }).join('');
   }
 
   function pubListaHtml(titulo, arr, fn) {
@@ -2259,6 +2310,18 @@
     renderPublicidad();
   }
 
+  // Buscador dentro de Publicidad: comparte el término con el buscador principal
+  document.getElementById('listContent').addEventListener('input', (e) => {
+    const q = e.target.closest('[data-pubbuscar]');
+    if (!q) return;
+    terminoBusqueda = q.value.trim().toLowerCase();
+    document.getElementById('buscadorLeads').value = q.value;
+    const pos = q.selectionStart;
+    renderPublicidad();
+    const n = document.querySelector('[data-pubbuscar]');
+    if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} }
+  });
+
   document.getElementById('listContent').addEventListener('change', (e) => {
     const f = e.target.closest('[data-pubf]');
     if (f) { pubF[f.dataset.pubf] = f.value; renderPublicidad(); return; }
@@ -2273,9 +2336,14 @@
   });
 
   document.getElementById('listContent').addEventListener('click', (e) => {
+    const v = e.target.closest('[data-pubvista]');
+    if (v) { pubVista = v.dataset.pubvista; renderPublicidad(); return; }
+    const ch = e.target.closest('[data-pubchat]');
+    if (ch) { const l = (pubLeads || []).find(x => x.id === ch.dataset.pubchat); if (l) abrirConversacion(l); return; }
     const b = e.target.closest('[data-pubacc]');
     if (!b) return;
     const acc = b.dataset.pubacc;
+    if (acc === 'soloresp') { pubSoloResp = !pubSoloResp; renderPublicidad(); return; }
     if (acc === 'sel') { pubSel = new Set(pubLista().slice(0, PUB_MAX).map(l => l.id)); renderPublicidad(); }
     else if (acc === 'limpiar') { pubSel.clear(); renderPublicidad(); }
     else if (acc === 'recargar') { pubResultado = ''; pubLeads = null; renderPublicidad(); }
