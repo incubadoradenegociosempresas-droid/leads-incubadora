@@ -2084,8 +2084,18 @@
   /* ═══════════ PUBLICIDAD (envío de plantilla desde el 2911) ═══════════ */
   const PUB_WEBHOOK = 'https://incubadoraempresas2026.app.n8n.cloud/webhook/crm-publicidad';
   const PUB_MAX = 50;
-  const PUB_DIAS = 14;
-  const PUB_TEXTO = 'Hola {nombre}, soy Karina de Incubadora de Empresas.\n\nLanzamos un plan nuevo: tu agente de IA que contesta tu WhatsApp 24/7, con CRM incluido, por $5,000 de creación y $2,500 al mes.\n\n¿Te cuento cómo funcionaría en tu negocio?\n\n[Sí, cuéntame]  [No me interesa]';
+  // Plantillas aprobadas en Meta (sin variables). El servidor solo acepta estas.
+  const PUB_PLANTILLAS = {
+    promo_diplomado_mkt_ia: {
+      nombre: '🎓 Diplomado de Marketing Digital con IA ($1,500)',
+      texto: 'Diplomado de Marketing Digital con IA\n\nHola, soy Karina de Incubadora de Empresas. Abrimos inscripciones a nuestro Diplomado de Marketing Digital con IA, donde aprendes a hacer campañas en Facebook e Instagram que sí traen clientes, a crear videos con IA y a automatizar tus respuestas de WhatsApp.\n\n📅 Jueves 29 de octubre y 5, 12 y 19 de noviembre, de 6 a 8 pm\n💻 En vivo por Zoom, y todas las sesiones se graban\n🎓 Con diploma avalado por Incubadora de Empresas\n💲 $1,500 el diplomado completo\n\n¿Te paso los detalles para apartar tu lugar?\n\n[Sí, quiero info]  [No me interesa]'
+    },
+    promo_agente_sin_alta: {
+      nombre: '🤖 Agente de IA + CRM ($2,900 al mes)',
+      texto: 'Hola, soy Karina de Incubadora de Empresas. Tu agente de IA que contesta tu WhatsApp 24/7, con CRM incluido, ahora por $2,900 al mes y sin costo de alta. ¿Te cuento cómo funcionaría en tu negocio?\n\n[Sí, cuéntame]  [No me interesa]'
+    }
+  };
+  let pubPlantilla = 'promo_diplomado_mkt_ia';
   let pubLeads = null;
   let pubCargando = false;
   let pubEnviando = false;
@@ -2124,9 +2134,16 @@
     if (['cerrado', 'perdido', 'no_interesado'].includes(l.estado)) return 'estado ' + l.estado;
     if (l.pago_confirmado) return 'ya es cliente';
     if (/^\s*(ya\s+)?no(\s+me\s+interesa|,?\s+gracias)/i.test(l.ultima_respuesta || '')) return 'dijo que no le interesa';
-    if (l.fecha_ultima_publicidad && (Date.now() - new Date(l.fecha_ultima_publicidad).getTime()) < PUB_DIAS * 86400000) return 'ya recibió publicidad';
     if (!/^52\d{10}$/.test(String(l.telefono || ''))) return 'teléfono inválido';
     return '';
+  }
+
+  // Primero los que nunca han recibido publicidad; después los que la recibieron hace más tiempo
+  function pubOrden(a, b) {
+    const fa = a.fecha_ultima_publicidad ? new Date(a.fecha_ultima_publicidad).getTime() : -1;
+    const fb = b.fecha_ultima_publicidad ? new Date(b.fecha_ultima_publicidad).getTime() : -1;
+    if (fa !== fb) return fa - fb;
+    return String(b.fecha_registro || '').localeCompare(String(a.fecha_registro || ''));
   }
 
   function pubLista() {
@@ -2141,7 +2158,7 @@
       if (pubF.hasta && f > pubF.hasta) return false;
       if (terminoBusqueda && !((l.nombre || '').toLowerCase().includes(terminoBusqueda) || (l.telefono || '').includes(terminoBusqueda))) return false;
       return true;
-    });
+    }).sort(pubOrden);
   }
 
   function pubContar(campo) {
@@ -2176,6 +2193,8 @@
     const elegibles = pubLeads.filter(l => !pubMotivo(l));
     const excluidos = pubLeads.length - elegibles.length;
     const lista = pubLista();
+    const nNunca = lista.filter(l => !l.fecha_ultima_publicidad).length;
+    const optPlantillas = Object.entries(PUB_PLANTILLAS).map(([k, p]) => `<option value="${k}" ${pubPlantilla === k ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>`).join('');
     const optEstados = pubContar('estado').map(([k, n]) => `<option value="${escapeHtml(k)}" ${pubF.estado === k ? 'selected' : ''}>${escapeHtml(estadoLabels[k] || k)} (${n})</option>`).join('');
     const optServ = pubContar('servicio_interes').map(([k, n]) => k
       ? `<option value="${escapeHtml(k)}" ${pubF.servicio === k ? 'selected' : ''}>${escapeHtml(k)} (${n})</option>`
@@ -2183,8 +2202,9 @@
 
     let html = tabs + `<div class="pub-box">
       <div class="pub-titulo">📣 Mensaje de publicidad · sale del 2911</div>
-      <div class="pub-msg">${escapeHtml(PUB_TEXTO)}</div>
-      <div class="pub-nota">Cada mensaje tiene costo de Meta. Máximo ${PUB_MAX} por tanda. No se envía a cerrados, clientes, quien dijo que no le interesa, ni a quien ya recibió publicidad en los últimos ${PUB_DIAS} días (${excluidos} excluidos).</div>
+      <div class="pub-filtros"><label>¿Qué plantilla enviar?<select data-pubplantilla>${optPlantillas}</select></label></div>
+      <div class="pub-msg">${escapeHtml(PUB_PLANTILLAS[pubPlantilla].texto)}</div>
+      <div class="pub-nota">Cada mensaje tiene costo de Meta. Máximo ${PUB_MAX} por tanda. No se envía a cerrados, clientes ni a quien dijo que no le interesa (${excluidos} excluidos). Arriba salen primero los que nunca han recibido publicidad.</div>
     </div>
     <div class="pub-filtros">
       <label>Estado<select data-pubf="estado"><option value="todos">Todos (${elegibles.length})</option>${optEstados}</select></label>
@@ -2201,7 +2221,7 @@
       <button type="button" class="pl-btn ok" id="pubEnviarBtn" data-pubacc="enviar">📣 Enviar</button>
     </div>
     <div id="pubResultado">${pubResultado}</div>
-    <div class="conteo-hoy"><b>${lista.length}</b> ${lista.length === 1 ? 'lead coincide' : 'leads coinciden'} con el filtro</div>`;
+    <div class="conteo-hoy"><b>${lista.length}</b> ${lista.length === 1 ? 'lead coincide' : 'leads coinciden'} con el filtro · <b>${nNunca}</b> nunca han recibido publicidad</div>`;
 
     html += lista.length ? lista.map(l => `
       <label class="pub-fila">
@@ -2209,6 +2229,7 @@
         <span class="pub-datos">
           <b>${escapeHtml(l.nombre || 'Sin nombre')}</b>
           <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')}${l.servicio_interes ? ' · ' + escapeHtml(l.servicio_interes) : ''} · ${(l.fecha_registro || '').slice(0, 10)}</small>
+          <small>${l.fecha_ultima_publicidad ? '📬 Última publicidad: ' + new Date(l.fecha_ultima_publicidad).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '🆕 Nunca ha recibido publicidad'}</small>
         </span>
       </label>`).join('') : '<div class="loading-text">Ningún lead coincide con el filtro.</div>';
 
@@ -2264,7 +2285,7 @@
     if (!prueba) {
       const h = new Date().getHours();
       const aviso = (h < 9 || h >= 20) ? '\n\n⚠️ Son fuera de horario (9:00 a 20:00). Considera enviarlo mañana.' : '';
-      if (!confirm(`Vas a enviar el mensaje de publicidad a ${ids.length} ${ids.length === 1 ? 'lead' : 'leads'} desde el 2911.\n\nEsto no se puede deshacer y cada mensaje tiene costo de Meta.${aviso}\n\n¿Enviar?`)) return;
+      if (!confirm(`Vas a enviar la plantilla "${PUB_PLANTILLAS[pubPlantilla].nombre}" a ${ids.length} ${ids.length === 1 ? 'lead' : 'leads'} desde el 2911.\n\nEsto no se puede deshacer y cada mensaje tiene costo de Meta.${aviso}\n\n¿Enviar?`)) return;
     }
     pubEnviando = true;
     pubActualizarBarra();
@@ -2276,7 +2297,7 @@
       const res = await fetch(PUB_WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: data.session.access_token, lead_ids: ids, prueba: !!prueba })
+        body: JSON.stringify({ token: data.session.access_token, lead_ids: ids, plantilla: pubPlantilla, prueba: !!prueba })
       });
       if (!res.ok) throw new Error('El servidor respondió ' + res.status);
       const r = await res.json();
@@ -2285,7 +2306,7 @@
       if (r.prueba) {
         pubResultado = `<div class="pub-res">
           <div class="pub-res-tit">👁 Revisión (no se envió nada)</div>
-          ${pubListaHtml('Lo recibirían', r.enviables, x => `${fila(x)} → <i>${escapeHtml(x.saludo)}…</i>`) || 'Nadie de la selección puede recibirlo.'}
+          ${pubListaHtml('Lo recibirían', r.enviables, x => `${fila(x)} · <i>${x.ya_recibio_publicidad ? 'ya recibió publicidad antes' : 'nunca ha recibido publicidad'}</i>`) || 'Nadie de la selección puede recibirlo.'}
           ${pubListaHtml('No lo recibirían', r.excluidos, x => `${fila(x)} — ${escapeHtml(x.motivo)}`)}
         </div>`;
       } else {
@@ -2323,6 +2344,8 @@
   });
 
   document.getElementById('listContent').addEventListener('change', (e) => {
+    const pl = e.target.closest('[data-pubplantilla]');
+    if (pl) { if (PUB_PLANTILLAS[pl.value]) pubPlantilla = pl.value; pubResultado = ''; renderPublicidad(); return; }
     const f = e.target.closest('[data-pubf]');
     if (f) { pubF[f.dataset.pubf] = f.value; renderPublicidad(); return; }
     const c = e.target.closest('[data-pubid]');
