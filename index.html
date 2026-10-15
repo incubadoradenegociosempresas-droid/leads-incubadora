@@ -857,6 +857,7 @@
 
   .loading-text { color: var(--text-dim); font-size: 13px; text-align: center; padding: 12px; }
   /* ── Publicidad ── */
+  .pub-env-acc { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
   .pub-box { background: rgba(255,122,48,0.08); border: 1px solid rgba(255,122,48,0.35); border-radius: var(--radius); padding: 12px; margin: 12px 0; }
   .pub-titulo { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
   .pub-msg { white-space: pre-wrap; font-size: 13px; line-height: 1.45; background: var(--bg); border-radius: 8px; padding: 10px; }
@@ -1556,6 +1557,17 @@
   let todosLosLeads = [];
   let terminoBusqueda = '';
 
+  // Coincidencia de búsqueda: por nombre, o por teléfono ignorando espacios, guiones, +52 y el 1 viejo.
+  function coincideBusqueda(l, term) {
+    if (!term) return true;
+    if ((l.nombre || '').toLowerCase().includes(term)) return true;
+    const dig = term.replace(/\D/g, '');
+    if (dig.length < 4) return false;
+    const tel = String(l.telefono || '').replace(/\D/g, '');
+    const corto = d => d.length > 10 ? d.slice(-10) : d;
+    return tel.includes(dig) || tel.includes(corto(dig)) || corto(tel).includes(dig);
+  }
+
   document.getElementById('buscadorLeads').addEventListener('input', (e) => {
     terminoBusqueda = e.target.value.trim().toLowerCase();
     renderLeads();
@@ -1689,10 +1701,7 @@
     }
 
     if (terminoBusqueda) {
-      leads = todosLosLeads.filter(l =>
-        (l.nombre || '').toLowerCase().includes(terminoBusqueda) ||
-        (l.telefono || '').includes(terminoBusqueda)
-      );
+      leads = todosLosLeads.filter(l => coincideBusqueda(l, terminoBusqueda));
       leads = [...leads].sort((a, b) => prioridad(a) - prioridad(b));
       if (!leads.length) {
         listContent.innerHTML = '<div class="loading-text">Sin resultados para "' + escapeHtml(terminoBusqueda) + '".</div>';
@@ -1918,6 +1927,7 @@
             <button class="pl-btn" data-accion="estado" data-id="${lead.id}">✏️ Estado</button>
             <button class="pl-btn" data-accion="fecha" data-id="${lead.id}">📅 Fecha</button>
             <button class="pl-btn ok" data-accion="cerrar" data-id="${lead.id}">✅ Cerrar</button>
+            <button class="pl-btn danger" data-accion="nointeresa" data-id="${lead.id}">🚫 No interesa</button>
             <button class="pl-btn danger" data-accion="borrar" data-id="${lead.id}">🗑 Borrar</button>
           </div>
         </div>
@@ -1994,6 +2004,10 @@
       if (!nueva) return;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(nueva.trim())) { showMsg('Formato inválido. Usa AAAA-MM-DD.', 'error'); return; }
       patch = { fecha_proximo_seguimiento: nueva.trim() };
+    }
+    else if (accion === 'nointeresa') {
+      if (!confirm(`¿Marcar a ${lead.nombre} como NO INTERESADO? Deja de recibir seguimientos y publicidad.`)) return;
+      patch = { estado: 'no_interesado', seguimiento_pausado: true };
     }
     else if (accion === 'cerrar') {
       if (!confirm(`¿Marcar a ${lead.nombre} como CERRADO? Deja de recibir seguimientos.`)) return;
@@ -2109,7 +2123,7 @@
     if (pubCargando) return;
     pubCargando = true;
     try {
-      const campos = 'id,nombre,telefono,estado,servicio_interes,fecha_registro,es_prueba,pago_confirmado,ultima_respuesta,fecha_ultima_publicidad,fecha_ultima_respuesta_cliente';
+      const campos = 'id,nombre,telefono,estado,servicio_interes,fecha_registro,es_prueba,pago_confirmado,ultima_respuesta,fecha_ultima_publicidad,fecha_ultima_respuesta_cliente,seguimiento_pausado';
       let todos = [], offset = 0;
       while (true) {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=${campos}&order=fecha_registro.desc&limit=1000&offset=${offset}`, { headers: await authHeaders() });
@@ -2156,7 +2170,7 @@
       const f = (l.fecha_registro || '').slice(0, 10);
       if (pubF.desde && f < pubF.desde) return false;
       if (pubF.hasta && f > pubF.hasta) return false;
-      if (terminoBusqueda && !((l.nombre || '').toLowerCase().includes(terminoBusqueda) || (l.telefono || '').includes(terminoBusqueda))) return false;
+      if (terminoBusqueda && !coincideBusqueda(l, terminoBusqueda)) return false;
       return true;
     }).sort(pubOrden);
   }
@@ -2248,7 +2262,7 @@
     const noInt = resp.filter(l => /^\s*(ya\s+)?no(\s+me\s+interesa|,?\s+gracias)/i.test(l.ultima_respuesta || '')).length;
     const pct = todos.length ? Math.round(resp.length * 100 / todos.length) : 0;
     let lista = pubSoloResp ? resp : todos;
-    if (terminoBusqueda) lista = lista.filter(l => (l.nombre || '').toLowerCase().includes(terminoBusqueda) || (l.telefono || '').includes(terminoBusqueda));
+    if (terminoBusqueda) lista = lista.filter(l => coincideBusqueda(l, terminoBusqueda));
     let html = `<div class="estatus-resumen">
         <div class="est-chip est-nuevo"><b>${todos.length}</b> Enviados</div>
         <div class="est-chip est-caliente"><b>${resp.length}</b> Respondieron (${pct}%)</div>
@@ -2269,9 +2283,41 @@
           <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')} · enviado ${envio}</small>
           ${r ? `<span class="pub-env-resp">💬 Respondió ${tiempoRelativo(l.fecha_ultima_respuesta_cliente)}: "${escapeHtml(l.ultima_respuesta || '')}"</span>` : '<small>Sin respuesta</small>'}
         </div>
-        <button type="button" class="pl-btn" data-pubchat="${l.id}">💬 Ver</button>
+        <div class="pub-env-acc">
+          <button type="button" class="pl-btn" data-pubchat="${l.id}">💬 Ver</button>
+          ${l.estado === 'no_interesado'
+            ? '<span class="badge pausa">🚫 No interesa</span>'
+            : `<button type="button" class="pl-btn" data-pubpatch="pausar" data-id="${l.id}">${l.seguimiento_pausado ? '▶️ Reanudar' : '⏸ Pausar'}</button>
+               <button type="button" class="pl-btn danger" data-pubpatch="nointeresa" data-id="${l.id}">🚫 No interesa</button>`}
+        </div>
       </div>`;
     }).join('');
+  }
+
+  // Pausar / marcar "no interesa" desde la pestaña Publicidad (deja de recibir seguimientos y publicidad).
+  async function pubPatch(id, tipo) {
+    const l = (pubLeads || []).find(x => x.id === id);
+    if (!l) return;
+    let patch;
+    if (tipo === 'nointeresa') {
+      if (!confirm(`¿Marcar a ${l.nombre || l.telefono} como NO INTERESADO? Deja de recibir seguimientos y publicidad.`)) return;
+      patch = { estado: 'no_interesado', seguimiento_pausado: true };
+    } else {
+      patch = { seguimiento_pausado: !l.seguimiento_pausado };
+    }
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: await authHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(patch)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      Object.assign(l, patch);
+      const g = todosLosLeads.find(x => x.id === id);
+      if (g) Object.assign(g, patch);
+      showMsg(tipo === 'nointeresa' ? 'Marcado como no interesado.' : (patch.seguimiento_pausado ? 'Seguimiento pausado.' : 'Seguimiento reanudado.'), 'success');
+      renderPublicidad();
+    } catch (err) { console.error(err); showMsg('Error al actualizar.', 'error'); }
   }
 
   function pubListaHtml(titulo, arr, fn) {
@@ -2361,6 +2407,8 @@
   document.getElementById('listContent').addEventListener('click', (e) => {
     const v = e.target.closest('[data-pubvista]');
     if (v) { pubVista = v.dataset.pubvista; renderPublicidad(); return; }
+    const pp = e.target.closest('[data-pubpatch]');
+    if (pp) { pubPatch(pp.dataset.id, pp.dataset.pubpatch); return; }
     const ch = e.target.closest('[data-pubchat]');
     if (ch) { const l = (pubLeads || []).find(x => x.id === ch.dataset.pubchat); if (l) abrirConversacion(l); return; }
     const b = e.target.closest('[data-pubacc]');
