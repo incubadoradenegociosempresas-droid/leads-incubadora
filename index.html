@@ -594,6 +594,14 @@
   .est-tibio { background: rgba(255,200,0,0.12); color: #FFD54A; border-color: rgba(255,200,0,0.35); }
   .est-caliente { background: rgba(255,92,92,0.14); color: #FF8A8A; border-color: rgba(255,92,92,0.4); }
   .est-frio { background: rgba(120,160,200,0.1); color: #9BB8D3; border-color: rgba(120,160,200,0.3); }
+  .est-hablar { background: rgba(255,170,60,0.14); color: #FFC27A; border-color: rgba(255,170,60,0.4); }
+  .est-cliente { background: rgba(61,220,151,0.12); color: #6FE7B3; border-color: rgba(61,220,151,0.4); }
+  .est-nointeresa { background: rgba(138,143,156,0.12); color: #A9AEB8; border-color: rgba(138,143,156,0.35); }
+  .estatus-resumen.clicable { grid-template-columns: repeat(4, 1fr); }
+  .estatus-resumen.clicable .est-chip { cursor: pointer; font-family: inherit; transition: transform .1s; }
+  .estatus-resumen.clicable .est-chip:active { transform: scale(.97); }
+  .estatus-resumen.clicable .est-chip.sel { outline: 2px solid currentColor; outline-offset: 1px; }
+  .est-regla { font-size: 12px; color: var(--text-dim); margin: -2px 0 10px; line-height: 1.4; }
   .pl-chat-btn {
     width: 100%;
     background: rgba(255,122,48,0.12);
@@ -653,6 +661,13 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
+  .chat-msg.seg24 { align-self: flex-end; background: rgba(61,220,151,0.12); color: #B8F2D6; border: 1px dashed rgba(61,220,151,0.55); border-bottom-right-radius: 3px; }
+  .chat-msg.seg24 .seg-tag { display: block; font-size: 10px; font-weight: 700; color: #3DDC97; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .filtro-btn.seg24.active { background: linear-gradient(135deg,#3DDC97,#1E9E66); color:#0b1a12; border-color:transparent; }
+  .seg24-linea { margin: 8px 0 4px; padding: 8px 10px; border-radius: 8px; background: rgba(61,220,151,0.08); border: 1px solid rgba(61,220,151,0.3); font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+  .seg24-linea b { color: var(--text); }
+  .seg24-linea .s24-ok { color: #3DDC97; font-weight: 700; }
+  .seg24-linea .s24-off { color: var(--text-dim); font-weight: 700; }
   .chat-empty { color: var(--text-dim); text-align: center; padding: 30px 0; font-size: 14px; }
   .badge.pausa { background: rgba(138,143,156,0.2); color: var(--text-dim); }
   .badge.vendido { background: rgba(61,220,151,0.25); color: var(--success); border: 1px solid rgba(61,220,151,0.4); }
@@ -1096,6 +1111,7 @@
       <button class="filtro-btn" data-filtro="activos">Activos</button>
       <button class="filtro-btn" data-filtro="pausados">Pausados</button>
       <button class="filtro-btn" data-filtro="terminado">🏁 Terminado</button>
+      <button class="filtro-btn seg24" data-filtro="seg24">⏱ Seguimiento 24 h</button>
       <button class="filtro-btn" data-filtro="todos">Todos</button>
       <button class="filtro-btn" data-filtro="publicidad">📣 Publicidad</button>
     </div>
@@ -1604,7 +1620,7 @@
     const listContent = document.getElementById('listContent');
     listContent.innerHTML = '<div class="loading-text">Cargando...</div>';
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=200`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=*&order=fecha_registro.desc&limit=1000`, {
         headers: await authHeaders()
       });
       if (!res.ok) throw new Error('Error al cargar');
@@ -1700,6 +1716,26 @@
       return;
     }
 
+    // ===== VISTA SEGUIMIENTO 24 H =====
+    if (filtroActual === 'seg24' && !terminoBusqueda) {
+      const lista = todosLosLeads.filter(l => seg24Info(l))
+        .sort((a, b) => new Date(b.fecha_ultima_respuesta_cliente) - new Date(a.fecha_ultima_respuesta_cliente));
+      const infos = lista.map(seg24Info);
+      const enviados = infos.reduce((s, i) => s + i.n, 0);
+      const pendientes = infos.filter(i => i.proximo).length;
+      const completos = infos.filter(i => i.n >= S24_MAX).length;
+      let html = `<div class="estatus-resumen">
+          <div class="est-chip est-nuevo"><b>${lista.length}</b> En ventana de 23 h</div>
+          <div class="est-chip est-caliente"><b>${enviados}</b> Seguimientos enviados</div>
+          <div class="est-chip"><b>${pendientes}</b> Con próximo envío</div>
+          <div class="est-chip"><b>${completos}</b> Completos 2/2</div>
+        </div>
+        <div class="conteo-hoy">⏱ Leads que escribieron en las últimas 23 h. Karina les escribe gratis (texto libre) hasta 2 veces, cada ~3 h, de 9:00 a 19:00. Los mensajes salen marcados en verde en la conversación.</div>`;
+      html += lista.length ? renderLeadCards(lista, hoy) : '<div class="loading-text">Nadie ha escrito en las últimas 23 h.</div>';
+      listContent.innerHTML = html;
+      return;
+    }
+
     if (terminoBusqueda) {
       leads = todosLosLeads.filter(l => coincideBusqueda(l, terminoBusqueda));
       leads = [...leads].sort((a, b) => prioridad(a) - prioridad(b));
@@ -1761,42 +1797,27 @@
     }
     else if (filtroActual === 'estatus') {
       const fechaResp = l => new Date(l.fecha_ultima_respuesta_cliente || l.fecha_ultimo_contacto || l.fecha_registro || 0).getTime();
-      const activos = todosLosLeads.filter(l => l.estado !== 'cerrado' && l.estado !== 'terminado');
+      const lista = todosLosLeads.filter(l => !l.es_prueba);
+      const grupos = {};
+      ESTATUS_CATS.forEach(c => grupos[c.id] = []);
+      lista.forEach(l => grupos[categoriaReal(l)].push(l));
+      Object.values(grupos).forEach(g => g.sort((a, b) => fechaResp(b) - fechaResp(a)));
 
-      // Categorización
-      const nuevos = activos.filter(l => l.estado === 'nuevo' && !respondioReal(l))
-        .sort((a,b) => fechaResp(b) - fechaResp(a));
-      const tibios = activos.filter(l => (l.estado === 'en_seguimiento' || respondioReal(l)) && l.estado !== 'caliente' && l.estado !== 'escalado' && l.estado !== 'terminado')
-        .sort((a,b) => fechaResp(b) - fechaResp(a));
-      const calientes = activos.filter(l => l.estado === 'caliente')
-        .sort((a,b) => fechaResp(b) - fechaResp(a));
-      const frios = activos.filter(l => l.estado === 'frio')
-        .sort((a,b) => fechaResp(b) - fechaResp(a));
+      let html = `<div class="estatus-resumen clicable">` + ESTATUS_CATS.map(c =>
+        `<button type="button" class="est-chip ${c.clase} ${estatusCat === c.id ? 'sel' : ''}" data-estcat="${c.id}"><b>${grupos[c.id].length}</b>${c.corto}</button>`
+      ).join('') + `</div>`;
 
-      let html = `<div class="estatus-resumen">
-        <div class="est-chip est-nuevo"><b>${nuevos.length}</b> Nuevos</div>
-        <div class="est-chip est-tibio"><b>${tibios.length}</b> Tibios</div>
-        <div class="est-chip est-caliente"><b>${calientes.length}</b> Calientes</div>
-        <div class="est-chip est-frio"><b>${frios.length}</b> Fríos</div>
-      </div>`;
-
-      if (calientes.length) {
-        html += `<div class="seccion-sep">🔥 Calientes — listos para comprar (${calientes.length})</div>`;
-        html += renderLeadCards(calientes, hoy);
-      }
-      if (tibios.length) {
-        html += `<div class="seccion-sep">🌤 Tibios — ya respondieron o preguntan (${tibios.length})</div>`;
-        html += renderLeadCards(tibios, hoy);
-      }
-      if (nuevos.length) {
-        html += `<div class="seccion-sep">🆕 Nuevos — recién llegados (${nuevos.length})</div>`;
-        html += renderLeadCards(nuevos, hoy);
-      }
-      if (frios.length) {
-        html += `<div class="seccion-sep">❄️ Fríos — no responden al seguimiento (${frios.length})</div>`;
-        html += renderLeadCards(frios, hoy);
-      }
-      if (html.indexOf('seccion-sep') === -1) html += '<div class="loading-text">No hay leads para categorizar.</div>';
+      const cats = estatusCat ? ESTATUS_CATS.filter(c => c.id === estatusCat) : ESTATUS_CATS.filter(c => c.id !== 'cliente' && c.id !== 'nointeresa' && c.id !== 'frio');
+      html += estatusCat
+        ? `<div class="est-regla">${cats[0].regla} · <a href="#" data-estcat="">ver resumen</a></div>`
+        : `<div class="est-regla">Toca un recuadro para ver solo esos leads. Abajo: los que hay que atender (calientes, pidió hablar, tibios y nuevos).</div>`;
+      cats.forEach(c => {
+        const g = grupos[c.id];
+        if (!g.length) return;
+        html += `<div class="seccion-sep">${c.titulo} (${g.length})</div>`;
+        html += renderLeadCards(g, hoy);
+      });
+      if (html.indexOf('seccion-sep') === -1) html += '<div class="loading-text">No hay leads en esta categoría.</div>';
       listContent.innerHTML = html;
       return;
     }
@@ -1858,6 +1879,75 @@
     return '$' + parseFloat(val).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' MXN';
   }
 
+  // ===== ESTATUS REAL DEL LEAD =====
+  // Una sola categoría por lead, en este orden de prioridad. Se calcula con lo que realmente pasó en la conversación,
+  // no solo con el campo "estado" (el clic en el anuncio manda "Quiero más información" y eso NO cuenta como interés).
+  const ESTATUS_CATS = [
+    { id: 'caliente',   clase: 'est-caliente',   corto: '🔥 Calientes',     titulo: '🔥 Calientes: pidió pagar o ya tiene datos de pago', regla: 'Karina le mandó datos de pago o liga, o dijo que quiere comprar, y no ha pagado.' },
+    { id: 'hablar',     clase: 'est-hablar',     corto: '🔔 Pidió hablar',  titulo: '🔔 Pidió hablar contigo', regla: 'Karina lo escaló: pidió hablar con una persona, mandó comprobante o necesita cotización a la medida.' },
+    { id: 'tibio',      clase: 'est-tibio',      corto: '🌤 Tibios',        titulo: '🌤 Tibios: platicó en los últimos 7 días', regla: 'Escribió algo más que el mensaje del anuncio en los últimos 7 días (preguntó, dio su giro, objetó).' },
+    { id: 'nuevo',      clase: 'est-nuevo',      corto: '🆕 Nuevos',        titulo: '🆕 Nuevos: solo dieron clic al anuncio', regla: 'Entró en los últimos 7 días y solo mandó el mensaje del anuncio (o nada más).' },
+    { id: 'frio',       clase: 'est-frio',       corto: '❄️ Fríos',         titulo: '❄️ Fríos: más de 7 días sin platicar', regla: 'No ha escrito nada real en más de 7 días, o ya se le acabaron los seguimientos.' },
+    { id: 'nointeresa', clase: 'est-nointeresa', corto: '🚫 No interesa',   titulo: '🚫 No le interesa', regla: 'Dijo que no le interesa, pidió que no le escriban o se marcó como perdido.' },
+    { id: 'cliente',    clase: 'est-cliente',    corto: '✅ Clientes',      titulo: '✅ Clientes: ya pagó', regla: 'Pago confirmado o marcado como cerrado.' },
+  ];
+  let estatusCat = '';
+  const MSG_ANUNCIO = /^\s*(¡\s*)?(hola[!,.\s]*)?(quiero|quisiera|me interesa)\s+(m[aá]s\s+)?informaci[oó]n/i;
+  function platicoDeVerdad(l) {
+    const t = String(l.ultima_respuesta || '').trim();
+    if (!l.fecha_ultima_respuesta_cliente || !t) return false;
+    return !(MSG_ANUNCIO.test(t) && t.length <= 70);
+  }
+  function categoriaReal(l) {
+    const dias = t => t ? (Date.now() - new Date(t).getTime()) / 86400000 : Infinity;
+    if (l.pago_confirmado || l.estado === 'cerrado') return 'cliente';
+    if (l.estado === 'no_interesado' || l.estado === 'perdido') return 'nointeresa';
+    if (l.estado === 'caliente') return 'caliente';
+    if (l.estado === 'escalado') return 'hablar';
+    const dResp = dias(l.fecha_ultima_respuesta_cliente);
+    if (platicoDeVerdad(l) && dResp <= 7) return 'tibio';
+    if (dias(l.fecha_registro) <= 7) return 'nuevo';
+    return 'frio';
+  }
+
+  // ===== SEGUIMIENTO 24 H (texto libre de Karina dentro de la ventana gratis de WhatsApp) =====
+  // Reglas iguales al flujo n8n "Seguimiento Leads WhatsApp": corre cada hora en punto de 9:00 a 19:00,
+  // máximo 2 mensajes, cada ~3 h (165 min) desde lo último, solo dentro de 23 h desde el último mensaje del cliente.
+  const S24_MAX = 2, S24_CADA_MIN = 165, S24_VENTANA_H = 23;
+  const S24_TERMINALES = ['cerrado', 'perdido', 'no_interesado', 'escalado'];
+  function horaCorta(t) { return new Date(t).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }); }
+  function seg24Info(l) {
+    const resp = l.fecha_ultima_respuesta_cliente ? new Date(l.fecha_ultima_respuesta_cliente).getTime() : 0;
+    const ahora = Date.now();
+    if (!resp || (ahora - resp) / 3600000 >= S24_VENTANA_H) return null; // fuera de la ventana gratis
+    const cierra = resp + S24_VENTANA_H * 3600000;
+    const ult = l.seg24_ultimo ? new Date(l.seg24_ultimo).getTime() : 0;
+    const n = (ult && ult > resp) ? (parseInt(l.seg24_enviados) || 0) : 0;
+    const info = { n, ultimo: ult > resp ? ult : 0, cierra, resp, estado: '', clase: 's24-ok', proximo: 0 };
+    const hoy = hoyStr();
+    if (l.pago_confirmado) { info.estado = '✅ Ya pagó: sin seguimiento'; info.clase = 's24-off'; return info; }
+    if (S24_TERMINALES.includes(l.estado)) { info.estado = '⛔ Sin seguimiento (' + (estadoLabels[l.estado] || l.estado) + ')'; info.clase = 's24-off'; return info; }
+    if (l.seguimiento_pausado && l.estado !== 'caliente') { info.estado = l.seg24_estado === 'omitido' ? '🤚 Karina decidió no escribirle (no le interesa / pidió persona / ya pagó)' : '⏸ Pausado'; info.clase = 's24-off'; return info; }
+    if (l.fecha_retomar && String(l.fecha_retomar).slice(0, 10) >= hoy) { info.estado = '📅 Quedó en una fecha: ' + String(l.fecha_retomar).slice(0, 10); info.clase = 's24-off'; return info; }
+    if (n >= S24_MAX) { info.estado = '✅ Completo (' + n + '/' + S24_MAX + ')'; return info; }
+    // Próximo envío: primera corrida en punto, entre 9:00 y 19:00, con 165 min desde lo último
+    const base = Math.max(resp, ult || 0, l.fecha_ultimo_envio ? new Date(l.fecha_ultimo_envio).getTime() : 0);
+    let t = base + S24_CADA_MIN * 60000;
+    let d = new Date(Math.max(t, ahora)); d.setMinutes(0, 0, 0); if (d.getTime() < Math.max(t, ahora)) d.setHours(d.getHours() + 1);
+    for (let i = 0; i < 48; i++) { const h = d.getHours(); if (h >= 9 && h < 20) break; d.setHours(d.getHours() + 1); }
+    if (d.getTime() >= cierra) { info.estado = '⌛ La ventana cierra antes del siguiente envío'; info.clase = 's24-off'; return info; }
+    info.proximo = d.getTime();
+    info.estado = '🕒 Próximo ≈ ' + horaCorta(d) + (new Date(d).toDateString() !== new Date().toDateString() ? ' (mañana)' : '');
+    return info;
+  }
+  function seg24Html(l) {
+    const i = seg24Info(l);
+    if (!i) return '';
+    return `<div class="seg24-linea">⏱ <b>Seguimiento 24 h: ${i.n}/${S24_MAX}</b>${i.ultimo ? ' · último ' + horaCorta(i.ultimo) : ''}<br>
+      Escribió ${tiempoRelativo(l.fecha_ultima_respuesta_cliente)} · ventana gratis hasta ${horaCorta(i.cierra)}<br>
+      <span class="${i.clase}">${i.estado}</span></div>`;
+  }
+
   function renderLeadCards(leads, hoy) {
     return leads.map(lead => {
       const respondio = respondioReal(lead);
@@ -1914,6 +2004,7 @@
             <span>Últ. envío: <b>${fechaEnvio}</b></span>
             <span>Próx: <b>${proxToque}</b></span>
           </div>
+          ${seg24Html(lead)}
           <button class="pl-chat-btn" data-accion="chat" data-id="${lead.id}">💬 Ver conversación</button>
           ${respondio ? `<div class="pl-tiempo">💬 Respondió ${tiempoRelativo(lead.fecha_ultima_respuesta_cliente)}</div>` : ''}
           ${respondio && lead.ultima_respuesta ? `<div class="pl-respondio-msg">💬 "${escapeHtml(lead.ultima_respuesta)}"</div>` : ''}
@@ -1937,6 +2028,14 @@
 
   document.getElementById('listContent').addEventListener('click', async (e) => {
     // Sub-filtro de origen (Todos/Campaña/Manual/Directo)
+    const catBtn = e.target.closest('[data-estcat]');
+    if (catBtn) {
+      e.preventDefault();
+      const c = catBtn.dataset.estcat;
+      estatusCat = (c && estatusCat !== c) ? c : '';
+      renderLeads();
+      return;
+    }
     const origenBtn = e.target.closest('[data-origen]');
     if (origenBtn) {
       origenActual = origenBtn.dataset.origen;
@@ -2059,7 +2158,14 @@
         return;
       }
       let contadorSeg = 0;
+      let contador24 = 0;
       body.innerHTML = msgs.map(m => {
+        if (m.rol === 'user') contador24 = 0;
+        if ((m.tipo_mensaje || '') === 'seguimiento_24h' && (m.rol || '') === 'assistant') {
+          contador24++;
+          const h24 = m.created_at ? new Date(m.created_at).toLocaleString('es-MX', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+          return `<div class="chat-msg seg24"><span class="seg-tag">⏱ Seguimiento 24 h #${contador24} · Karina (gratis)</span>${escapeHtml(m.mensaje)}<span class="ch-time">${h24}</span></div>`;
+        }
         const rol = (m.rol || '').toLowerCase();
         const tipo = (m.tipo_mensaje || m.tipo || '').toLowerCase();
         const esCliente = rol === 'user' || rol === 'cliente' || tipo === 'cliente';
@@ -2075,6 +2181,9 @@
             ${escapeHtml(m.mensaje)}
             <span class="ch-time">${hora}</span>
           </div>`;
+        }
+        if (rol === 'auto_respuesta') {
+          return `<div class="chat-msg cliente" style="opacity:.6"><span class="seg-tag">🤖 Respuesta automática del cliente (Karina no contesta)</span>${escapeHtml(m.mensaje)}<span class="ch-time">${hora}</span></div>`;
         }
         const etiqueta = esCliente ? '👤 Cliente' : '🤖 Karina · Agente conversacional';
         return `<div class="chat-msg ${esCliente ? 'cliente' : 'karina'}"><span class="seg-tag">${etiqueta}</span>${escapeHtml(m.mensaje)}<span class="ch-time">${hora}</span></div>`;
