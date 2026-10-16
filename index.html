@@ -1728,9 +1728,9 @@
           <div class="est-chip est-nuevo"><b>${lista.length}</b> En ventana de 23 h</div>
           <div class="est-chip est-caliente"><b>${enviados}</b> Seguimientos enviados</div>
           <div class="est-chip"><b>${pendientes}</b> Con próximo envío</div>
-          <div class="est-chip"><b>${completos}</b> Completos 2/2</div>
+          <div class="est-chip"><b>${completos}</b> Completos 3/3</div>
         </div>
-        <div class="conteo-hoy">⏱ Leads que escribieron en las últimas 23 h. Karina les escribe gratis (texto libre) hasta 2 veces, cada ~3 h, de 9:00 a 19:00. Los mensajes salen marcados en verde en la conversación.</div>`;
+        <div class="conteo-hoy">⏱ Leads que escribieron en las últimas 23 h. Karina les escribe gratis (texto libre) hasta 3 veces, cada ~3 h, de 9:00 a 19:00. Los mensajes salen marcados en verde en la conversación.</div>`;
       html += lista.length ? renderLeadCards(lista, hoy) : '<div class="loading-text">Nadie ha escrito en las últimas 23 h.</div>';
       listContent.innerHTML = html;
       return;
@@ -1912,8 +1912,8 @@
 
   // ===== SEGUIMIENTO 24 H (texto libre de Karina dentro de la ventana gratis de WhatsApp) =====
   // Reglas iguales al flujo n8n "Seguimiento Leads WhatsApp": corre cada hora en punto de 9:00 a 19:00,
-  // máximo 2 mensajes, cada ~3 h (165 min) desde lo último, solo dentro de 23 h desde el último mensaje del cliente.
-  const S24_MAX = 2, S24_CADA_MIN = 165, S24_VENTANA_H = 23;
+  // máximo 3 mensajes, cada ~3 h (165 min) desde lo último, solo dentro de 23 h desde el último mensaje del cliente.
+  const S24_MAX = 3, S24_CADA_MIN = 165, S24_VENTANA_H = 23;
   const S24_TERMINALES = ['cerrado', 'perdido', 'no_interesado', 'escalado'];
   function horaCorta(t) { return new Date(t).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }); }
   function seg24Info(l) {
