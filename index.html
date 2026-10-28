@@ -611,6 +611,20 @@
     font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px;
   }
   .pl-chat-btn:active { opacity: 0.7; }
+  /* 28-oct-2026: escribirle al lead desde el WhatsApp personal de Jorge (2496) */
+  .pl-wa-btn {
+    display: block; width: 100%; box-sizing: border-box; text-align: center; text-decoration: none;
+    background: rgba(37,211,102,0.12); border: 1px solid rgba(37,211,102,0.45); color: #25D366;
+    border-radius: 8px; padding: 9px; font-size: 13px; font-weight: 700; margin-top: 8px;
+  }
+  .pl-wa-btn.urgente { background: #25D366; color: #08130c; border-color: #25D366; }
+  .pl-wa-btn:active { opacity: 0.7; }
+  .ch-wa { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 700; color: #25D366; text-decoration: none; border: 1px solid rgba(37,211,102,0.45); border-radius: 6px; padding: 4px 8px; }
+  .pl-estado-sel { flex: 1 1 140px; min-width: 0; background: var(--bg, #111); color: inherit; border: 1px solid var(--border); border-radius: 6px; padding: 6px; font-size: 12px; font-family: inherit; }
+  .pub-fila.excluido { opacity: .55; cursor: default; border-style: dashed; }
+  .pub-fila.excluido .pub-motivo { color: #ff6b6b; font-size: 12px; font-weight: 700; }
+  .pub-sep { margin: 14px 0 6px; font-size: 13px; font-weight: 700; color: var(--text-dim); }
+  .pub-env.noint { border-color: #ff6b6b; background: rgba(255,107,107,0.06); opacity: .8; }
   .chat-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.7);
@@ -1615,8 +1629,18 @@
   const estadoLabels = {
     nuevo: 'Nuevo', en_seguimiento: 'En seguimiento', caliente: 'Caliente',
     cerrado: 'Cerrado', frio: 'Frío', respondio: 'Respondió', escalado: '🔔 Quiere hablar',
-    contactado: 'Contactado', terminado: '🏁 Terminado'
+    contactado: 'Contactado', terminado: '🏁 Terminado', perdido: 'Perdido', no_interesado: '🚫 No interesado'
   };
+  // 28-oct-2026: opciones del pipeline para el selector de estado de cada lead (las mismas que acepta la base de datos).
+  const ESTADOS_PIPELINE = ['nuevo', 'contactado', 'respondio', 'en_seguimiento', 'caliente', 'escalado', 'cerrado', 'frio', 'terminado', 'perdido', 'no_interesado'];
+  const ESTADOS_TEXTO = { nuevo: 'Nuevo', contactado: 'Contactado', respondio: 'Respondió', en_seguimiento: 'En seguimiento', caliente: '🔥 Caliente', escalado: '🔔 Quiere hablar contigo', cerrado: '✅ Cerrado (ya compró)', frio: '❄️ Frío', terminado: '🏁 Terminado', perdido: 'Perdido', no_interesado: '🚫 No interesado' };
+  // Liga para escribirle al lead desde el WhatsApp de Jorge (se abre en el WhatsApp de este dispositivo, el 477 273 2496).
+  function waJorge(lead) {
+    const tel = String(lead.telefono || '').replace(/\D/g, '');
+    const nom = String(lead.nombre || '').trim().split(' ')[0];
+    const txt = `Hola${nom && /[a-záéíóúñ]{2,}/i.test(nom) ? ' ' + nom : ''}, soy Jorge Meza de Incubadora de Empresas. Karina me comentó que querías hablar conmigo. ¿En qué te puedo ayudar?`;
+    return `https://wa.me/${tel}?text=${encodeURIComponent(txt)}`;
+  }
 
   async function cargarLeads() {
     const listContent = document.getElementById('listContent');
@@ -2008,6 +2032,7 @@
           </div>
           ${seg24Html(lead)}
           <button class="pl-chat-btn" data-accion="chat" data-id="${lead.id}">💬 Ver conversación</button>
+          <a class="pl-wa-btn ${escalado ? 'urgente' : ''}" href="${waJorge(lead)}" target="_blank" rel="noopener">📲 ${escalado ? 'Pidió hablar contigo: escríbele' : 'Escribirle'} desde mi WhatsApp (2496)</a>
           ${respondio ? `<div class="pl-tiempo">💬 Respondió ${tiempoRelativo(lead.fecha_ultima_respuesta_cliente)}</div>` : ''}
           ${respondio && lead.ultima_respuesta ? `<div class="pl-respondio-msg">💬 "${escapeHtml(lead.ultima_respuesta)}"</div>` : ''}
           ${ventaHtml}
@@ -2017,7 +2042,9 @@
           <div class="pl-acciones">
             <button class="pl-btn warn" data-accion="reiniciar" data-id="${lead.id}">🔄 Reiniciar</button>
             <button class="pl-btn" data-accion="pausar" data-id="${lead.id}" data-pausado="${pausado}">${pausado ? '▶️ Reanudar' : '⏸ Pausar'}</button>
-            <button class="pl-btn" data-accion="estado" data-id="${lead.id}">✏️ Estado</button>
+            <select class="pl-estado-sel" data-estadosel="${lead.id}" title="Cambiar estado">
+              ${ESTADOS_PIPELINE.map(k => `<option value="${k}" ${lead.estado === k ? 'selected' : ''}>${ESTADOS_TEXTO[k]}</option>`).join('')}
+            </select>
             <button class="pl-btn" data-accion="fecha" data-id="${lead.id}">📅 Fecha</button>
             <button class="pl-btn ok" data-accion="cerrar" data-id="${lead.id}">✅ Cerrar</button>
             <button class="pl-btn danger" data-accion="nointeresa" data-id="${lead.id}">🚫 No interesa</button>
@@ -2148,6 +2175,7 @@
     const body = document.getElementById('chatBody');
     document.getElementById('chatNombre').textContent = lead.nombre || 'Sin nombre';
     document.getElementById('chatTel').textContent = lead.telefono || '';
+    document.getElementById('chatWa').href = waJorge(lead);
     body.innerHTML = '<div class="chat-empty">Cargando conversación...</div>';
     overlay.classList.add('open');
     try {
@@ -2210,17 +2238,14 @@
   const PUB_WEBHOOK = 'https://incubadoraempresas2026.app.n8n.cloud/webhook/crm-publicidad';
   const PUB_MAX = 50;
   // Plantillas aprobadas en Meta (sin variables). El servidor solo acepta estas.
+  // 28-oct-2026: se quitan las plantillas viejas (diplomado ya cerró; "$2,900 al mes sin alta" ya no existe).
   const PUB_PLANTILLAS = {
-    promo_diplomado_mkt_ia: {
-      nombre: '🎓 Diplomado de Marketing Digital con IA ($1,500)',
-      texto: 'Diplomado de Marketing Digital con IA\n\nHola, soy Karina de Incubadora de Empresas. Abrimos inscripciones a nuestro Diplomado de Marketing Digital con IA, donde aprendes a hacer campañas en Facebook e Instagram que sí traen clientes, a crear videos con IA y a automatizar tus respuestas de WhatsApp.\n\n📅 Jueves 29 de octubre y 5, 12 y 19 de noviembre, de 6 a 8 pm\n💻 En vivo por Zoom, y todas las sesiones se graban\n🎓 Con diploma avalado por Incubadora de Empresas\n💲 $1,500 el diplomado completo\n\n¿Te paso los detalles para apartar tu lugar?\n\n[Sí, quiero info]  [No me interesa]'
-    },
-    promo_agente_sin_alta: {
-      nombre: '🤖 Agente de IA + CRM ($2,900 al mes)',
-      texto: 'Hola, soy Karina de Incubadora de Empresas. Tu agente de IA que contesta tu WhatsApp 24/7, con CRM incluido, ahora por $2,900 al mes y sin costo de alta. ¿Te cuento cómo funcionaría en tu negocio?\n\n[Sí, cuéntame]  [No me interesa]'
+    promo_agente_dos_opciones: {
+      nombre: '🤖 Agente de IA: lo armamos o manual ($950)',
+      texto: '¿Te gustaría tener un agente de IA que conteste a tus clientes, cotice, agende y te avise cuando alguien está listo para comprar, funcionando 24/7? 🤖\n\nTengo dos opciones para ti:\n\n1️⃣ Nosotros lo armamos, con tu CRM personalizado y a la medida.\n\n2️⃣ Te damos un manual que te enseña paso a paso a hacerlo tú mismo, y te asesoramos hasta que quede configurado.\n\nUn cliente que no recibe respuesta en minutos le compra a otro. Con IA, ninguno se te escapa, ni de noche ni en fin de semana.\n\nSi te interesa, elige la opción que necesitas 👇\n\n[Manual de automatización]  [CRM con IA a la medida]'
     }
   };
-  let pubPlantilla = 'promo_diplomado_mkt_ia';
+  let pubPlantilla = 'promo_agente_dos_opciones';
   let pubLeads = null;
   let pubCargando = false;
   let pubEnviando = false;
@@ -2229,6 +2254,9 @@
   let pubF = { estado: 'todos', servicio: 'todos', desde: '', hasta: '' };
   let pubVista = 'enviar';
   let pubSoloResp = false;
+  let pubOrdenSel = 'nunca';   // 28-oct-2026: cómo ordenar la lista de envío
+  let pubVerExcluidos = false; // mostrar abajo, en gris, a los que no se les puede enviar
+  let pubEnvFiltro = 'todos';  // pestaña Enviados: todos / resp / sinresp / noint
 
   async function pubCargar() {
     if (pubCargando) return;
@@ -2263,12 +2291,40 @@
     return '';
   }
 
+  function pubMotivoTexto(m) {
+    return ({ 'estado no_interesado': 'No le interesa (marcado)', 'estado cerrado': 'Ya es cliente (cerrado)', 'estado perdido': 'Perdido', 'ya es cliente': 'Ya es cliente (pagó)', 'dijo que no le interesa': 'Contestó que no le interesa', 'teléfono inválido': 'Teléfono inválido' })[m] || m;
+  }
+  function pubEsNoInt(l) { return l.estado === 'no_interesado' || /^\s*(ya\s+)?no(\s+me\s+interesa|,?\s+gracias)/i.test(l.ultima_respuesta || ''); }
+
   // Primero los que nunca han recibido publicidad; después los que la recibieron hace más tiempo
   function pubOrden(a, b) {
     const fa = a.fecha_ultima_publicidad ? new Date(a.fecha_ultima_publicidad).getTime() : -1;
     const fb = b.fecha_ultima_publicidad ? new Date(b.fecha_ultima_publicidad).getTime() : -1;
     if (fa !== fb) return fa - fb;
     return String(b.fecha_registro || '').localeCompare(String(a.fecha_registro || ''));
+  }
+
+  const PUB_ORDENES = {
+    nunca: ['🆕 Nunca recibieron publicidad primero', pubOrden],
+    recientes: ['📅 Registrados más recientes', (a, b) => String(b.fecha_registro || '').localeCompare(String(a.fecha_registro || ''))],
+    antiguos: ['📅 Registrados más antiguos', (a, b) => String(a.fecha_registro || '').localeCompare(String(b.fecha_registro || ''))],
+    actividad: ['💬 Escribieron más recientemente', (a, b) => String(b.fecha_ultima_respuesta_cliente || '').localeCompare(String(a.fecha_ultima_respuesta_cliente || ''))],
+    estado: ['🏷 Por estado', (a, b) => ESTADOS_PIPELINE.indexOf(a.estado) - ESTADOS_PIPELINE.indexOf(b.estado) || pubOrden(a, b)],
+    nombre: ['🔤 Por nombre (A-Z)', (a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es')]
+  };
+  function pubCoincide(l) {
+    if (pubF.estado !== 'todos' && l.estado !== pubF.estado) return false;
+    const serv = l.servicio_interes || '';
+    if (pubF.servicio === '__sin__' && serv) return false;
+    if (pubF.servicio !== 'todos' && pubF.servicio !== '__sin__' && serv !== pubF.servicio) return false;
+    const f = (l.fecha_registro || '').slice(0, 10);
+    if (pubF.desde && f < pubF.desde) return false;
+    if (pubF.hasta && f > pubF.hasta) return false;
+    if (terminoBusqueda && !coincideBusqueda(l, terminoBusqueda)) return false;
+    return true;
+  }
+  function pubExcluidosLista() {
+    return (pubLeads || []).filter(l => pubMotivo(l) && pubCoincide(l)).sort((a, b) => pubMotivo(a).localeCompare(pubMotivo(b)) || String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
   }
 
   function pubLista() {
@@ -2283,7 +2339,7 @@
       if (pubF.hasta && f > pubF.hasta) return false;
       if (terminoBusqueda && !coincideBusqueda(l, terminoBusqueda)) return false;
       return true;
-    }).sort(pubOrden);
+    }).sort((PUB_ORDENES[pubOrdenSel] || PUB_ORDENES.nunca)[1]);
   }
 
   function pubContar(campo) {
@@ -2336,6 +2392,8 @@
       <label>Servicio de interés<select data-pubf="servicio"><option value="todos">Todos</option>${optServ}</select></label>
       <label>Registrado desde<input type="date" data-pubf="desde" value="${pubF.desde}"></label>
       <label>Registrado hasta<input type="date" data-pubf="hasta" value="${pubF.hasta}"></label>
+      <label>Ordenar por<select data-puborden>${Object.entries(PUB_ORDENES).map(([k, o]) => `<option value="${k}" ${pubOrdenSel === k ? 'selected' : ''}>${o[0]}</option>`).join('')}</select></label>
+      <label>No se les puede enviar<select data-pubexcl><option value="0" ${!pubVerExcluidos ? 'selected' : ''}>Ocultarlos</option><option value="1" ${pubVerExcluidos ? 'selected' : ''}>Mostrarlos abajo, en gris (${excluidos})</option></select></label>
     </div>
     <input type="text" class="buscador" data-pubbuscar placeholder="🔍 Buscar por nombre o teléfono..." value="${escapeHtml(terminoBusqueda)}">
     <div class="pub-barra">
@@ -2358,6 +2416,19 @@
         </span>
       </label>`).join('') : '<div class="loading-text">Ningún lead coincide con el filtro.</div>';
 
+    if (pubVerExcluidos) {
+      const exc = pubExcluidosLista();
+      html += `<div class="pub-sep">🚫 No se les puede enviar (${exc.length}) · no se pueden seleccionar</div>` + (exc.length ? exc.map(l => `
+      <div class="pub-fila excluido">
+        <span>🚫</span>
+        <span class="pub-datos">
+          <b>${escapeHtml(l.nombre || 'Sin nombre')}</b>
+          <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')}${l.servicio_interes ? ' · ' + escapeHtml(l.servicio_interes) : ''}</small>
+          <span class="pub-motivo">${escapeHtml(pubMotivoTexto(pubMotivo(l)))}</span>
+        </span>
+      </div>`).join('') : '<div class="loading-text">Ninguno con este filtro.</div>');
+    }
+
     listContent.innerHTML = html;
     pubActualizarBarra();
   }
@@ -2367,18 +2438,30 @@
   }
 
   function pubEnviadosHtml() {
+    // 28-oct-2026: respondieron con interés primero, luego sin respuesta y al final los que no les interesa (en rojo).
+    const grupo = l => pubEsNoInt(l) ? 2 : (pubRespondio(l) ? 0 : 1);
     const todos = pubLeads.filter(l => l.fecha_ultima_publicidad)
-      .sort((a, b) => (pubRespondio(b) - pubRespondio(a)) || (new Date(b.fecha_ultima_respuesta_cliente || b.fecha_ultima_publicidad) - new Date(a.fecha_ultima_respuesta_cliente || a.fecha_ultima_publicidad)));
+      .sort((a, b) => (grupo(a) - grupo(b)) || (new Date(b.fecha_ultima_respuesta_cliente || b.fecha_ultima_publicidad) - new Date(a.fecha_ultima_respuesta_cliente || a.fecha_ultima_publicidad)));
     const resp = todos.filter(pubRespondio);
-    const noInt = resp.filter(l => /^\s*(ya\s+)?no(\s+me\s+interesa|,?\s+gracias)/i.test(l.ultima_respuesta || '')).length;
+    const noIntLista = todos.filter(pubEsNoInt);
+    const noInt = noIntLista.length;
     const pct = todos.length ? Math.round(resp.length * 100 / todos.length) : 0;
     let lista = pubSoloResp ? resp : todos;
+    if (pubEnvFiltro === 'resp') lista = todos.filter(l => pubRespondio(l) && !pubEsNoInt(l));
+    else if (pubEnvFiltro === 'sinresp') lista = todos.filter(l => !pubRespondio(l) && !pubEsNoInt(l));
+    else if (pubEnvFiltro === 'noint') lista = noIntLista;
     if (terminoBusqueda) lista = lista.filter(l => coincideBusqueda(l, terminoBusqueda));
     let html = `<div class="estatus-resumen">
         <div class="est-chip est-nuevo"><b>${todos.length}</b> Enviados</div>
         <div class="est-chip est-caliente"><b>${resp.length}</b> Respondieron (${pct}%)</div>
         <div class="est-chip est-frio"><b>${noInt}</b> No les interesa</div>
       </div>
+      <div class="pub-filtros"><label>Ver<select data-pubenvf>
+        <option value="todos" ${pubEnvFiltro === 'todos' ? 'selected' : ''}>Todos (interesados primero, no interesados al final)</option>
+        <option value="resp" ${pubEnvFiltro === 'resp' ? 'selected' : ''}>💬 Respondieron con interés</option>
+        <option value="sinresp" ${pubEnvFiltro === 'sinresp' ? 'selected' : ''}>⏳ Sin respuesta</option>
+        <option value="noint" ${pubEnvFiltro === 'noint' ? 'selected' : ''}>🚫 No les interesa (${noInt})</option>
+      </select></label></div>
       <input type="text" class="buscador" data-pubbuscar placeholder="🔍 Buscar por nombre o teléfono..." value="${escapeHtml(terminoBusqueda)}">
       <div class="pub-barra">
         <button type="button" class="pl-btn" data-pubacc="soloresp">${pubSoloResp ? 'Ver todos los enviados' : 'Ver solo los que respondieron'}</button>
@@ -2388,10 +2471,12 @@
     return html + lista.map(l => {
       const r = pubRespondio(l);
       const envio = new Date(l.fecha_ultima_publicidad).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-      return `<div class="pub-env ${r ? 'resp' : ''}">
+      const ni = pubEsNoInt(l);
+      return `<div class="pub-env ${ni ? 'noint' : (r ? 'resp' : '')}">
         <div class="pub-datos">
           <b>${escapeHtml(l.nombre || 'Sin nombre')}</b>
           <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')} · enviado ${envio}</small>
+          ${ni ? '<span class="pub-motivo" style="color:#ff6b6b;font-size:12px;font-weight:700">🚫 No le interesa · no se le vuelve a enviar</span>' : ''}
           ${r ? `<span class="pub-env-resp">💬 Respondió ${tiempoRelativo(l.fecha_ultima_respuesta_cliente)}: "${escapeHtml(l.ultima_respuesta || '')}"</span>` : '<small>Sin respuesta</small>'}
         </div>
         <div class="pub-env-acc">
@@ -2500,11 +2585,42 @@
     if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} }
   });
 
-  document.getElementById('listContent').addEventListener('change', (e) => {
+  document.getElementById('listContent').addEventListener('change', async (e) => {
+    const es = e.target.closest('[data-estadosel]');
+    if (es) {
+      const id = es.dataset.estadosel;
+      const lead = todosLosLeads.find(l => l.id === id);
+      const nuevo = es.value;
+      if (!lead || !ESTADOS_PIPELINE.includes(nuevo) || nuevo === lead.estado) return;
+      const patch = { estado: nuevo };
+      // Cerrado y No interesado dejan de recibir seguimientos (igual que sus botones).
+      if (nuevo === 'cerrado' || nuevo === 'no_interesado' || nuevo === 'perdido') patch.seguimiento_pausado = true;
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?id=eq.${id}`, {
+          method: 'PATCH', headers: { ...(await authHeaders()), 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify(patch)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        Object.assign(lead, patch);
+        if (pubLeads) { const p = pubLeads.find(x => x.id === id); if (p) Object.assign(p, patch); }
+        showMsg('Estado actualizado: ' + ESTADOS_TEXTO[nuevo], 'success');
+        renderLeads();
+      } catch (err) {
+        console.error(err);
+        es.value = lead.estado;
+        showMsg('No se pudo cambiar el estado.', 'error');
+      }
+      return;
+    }
     const pl = e.target.closest('[data-pubplantilla]');
     if (pl) { if (PUB_PLANTILLAS[pl.value]) pubPlantilla = pl.value; pubResultado = ''; renderPublicidad(); return; }
     const f = e.target.closest('[data-pubf]');
     if (f) { pubF[f.dataset.pubf] = f.value; renderPublicidad(); return; }
+    const o = e.target.closest('[data-puborden]');
+    if (o) { if (PUB_ORDENES[o.value]) pubOrdenSel = o.value; renderPublicidad(); return; }
+    const x = e.target.closest('[data-pubexcl]');
+    if (x) { pubVerExcluidos = x.value === '1'; renderPublicidad(); return; }
+    const ef = e.target.closest('[data-pubenvf]');
+    if (ef) { pubEnvFiltro = ef.value; renderPublicidad(); return; }
     const c = e.target.closest('[data-pubid]');
     if (c) {
       if (c.checked) {
@@ -2540,6 +2656,7 @@
       <div>
         <div class="ch-nombre" id="chatNombre">Lead</div>
         <div class="ch-tel" id="chatTel"></div>
+        <a class="ch-wa" id="chatWa" href="#" target="_blank" rel="noopener">📲 Escribirle desde mi WhatsApp (2496)</a>
       </div>
       <button class="chat-close" onclick="cerrarConversacion()">&times;</button>
     </div>
