@@ -633,6 +633,8 @@
   .chat-body { padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
   .chat-msg { max-width: 78%; padding: 9px 12px; border-radius: 12px; font-size: 14px; line-height: 1.35; word-wrap: break-word; }
   .chat-msg .ch-time { display: block; font-size: 10px; opacity: 0.6; margin-top: 4px; }
+  /* 28-oct-2026: respeta los renglones del mensaje tal como llegan a WhatsApp */
+  .chat-msg .ch-txt { white-space: pre-wrap; }
   .chat-msg.cliente { align-self: flex-start; background: #23272F; color: var(--text); border-bottom-left-radius: 3px; }
   .chat-msg.karina { align-self: flex-end; background: var(--accent-dim); color: #FFD9BF; border-bottom-right-radius: 3px; }
   .chat-msg.seguimiento {
@@ -2164,7 +2166,7 @@
         if ((m.tipo_mensaje || '') === 'seguimiento_24h' && (m.rol || '') === 'assistant') {
           contador24++;
           const h24 = m.created_at ? new Date(m.created_at).toLocaleString('es-MX', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
-          return `<div class="chat-msg seg24"><span class="seg-tag">⏱ Seguimiento 24 h #${contador24} · Karina (gratis)</span>${escapeHtml(m.mensaje)}<span class="ch-time">${h24}</span></div>`;
+          return `<div class="chat-msg seg24"><span class="seg-tag">⏱ Seguimiento 24 h #${contador24} · Karina (gratis)</span><span class="ch-txt">${escapeHtml(m.mensaje)}</span><span class="ch-time">${h24}</span></div>`;
         }
         const rol = (m.rol || '').toLowerCase();
         const tipo = (m.tipo_mensaje || m.tipo || '').toLowerCase();
@@ -2178,15 +2180,15 @@
           contadorSeg++;
           return `<div class="chat-msg seguimiento">
             <span class="seg-tag">📤 Seguimiento automático #${contadorSeg}</span>
-            ${escapeHtml(m.mensaje)}
+            <span class="ch-txt">${escapeHtml(m.mensaje)}</span>
             <span class="ch-time">${hora}</span>
           </div>`;
         }
         if (rol === 'auto_respuesta') {
-          return `<div class="chat-msg cliente" style="opacity:.6"><span class="seg-tag">🤖 Respuesta automática del cliente (Karina no contesta)</span>${escapeHtml(m.mensaje)}<span class="ch-time">${hora}</span></div>`;
+          return `<div class="chat-msg cliente" style="opacity:.6"><span class="seg-tag">🤖 Respuesta automática del cliente (Karina no contesta)</span><span class="ch-txt">${escapeHtml(m.mensaje)}</span><span class="ch-time">${hora}</span></div>`;
         }
         const etiqueta = esCliente ? '👤 Cliente' : '🤖 Karina · Agente conversacional';
-        return `<div class="chat-msg ${esCliente ? 'cliente' : 'karina'}"><span class="seg-tag">${etiqueta}</span>${escapeHtml(m.mensaje)}<span class="ch-time">${hora}</span></div>`;
+        return `<div class="chat-msg ${esCliente ? 'cliente' : 'karina'}"><span class="seg-tag">${etiqueta}</span><span class="ch-txt">${escapeHtml(m.mensaje)}</span><span class="ch-time">${hora}</span></div>`;
       }).join('');
       body.scrollTop = body.scrollHeight;
     } catch (err) {
