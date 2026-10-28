@@ -2262,7 +2262,7 @@
     if (pubCargando) return;
     pubCargando = true;
     try {
-      const campos = 'id,nombre,telefono,estado,servicio_interes,fecha_registro,es_prueba,pago_confirmado,ultima_respuesta,fecha_ultima_publicidad,fecha_ultima_respuesta_cliente,seguimiento_pausado';
+      const campos = 'id,nombre,telefono,estado,servicio_interes,anuncio_id,anuncio_titulo,fecha_registro,es_prueba,pago_confirmado,ultima_respuesta,fecha_ultima_publicidad,fecha_ultima_respuesta_cliente,seguimiento_pausado';
       let todos = [], offset = 0;
       while (true) {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?select=${campos}&order=fecha_registro.desc&limit=1000&offset=${offset}`, { headers: await authHeaders() });
@@ -2312,11 +2312,34 @@
     estado: ['🏷 Por estado', (a, b) => ESTADOS_PIPELINE.indexOf(a.estado) - ESTADOS_PIPELINE.indexOf(b.estado) || pubOrden(a, b)],
     nombre: ['🔤 Por nombre (A-Z)', (a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es')]
   };
+  // 28-oct-2026 (Jorge): el filtro "Servicio de interés" solo muestra SUS servicios. El texto libre que guarda Karina
+  // (muchas veces es el giro del cliente) se agrupa aquí; lo que no es un servicio de Incubadora cae en "Otro".
+  const PUB_ANUNCIOS_MANUAL = ['120249070958560133', '120249117105780133', '1137026285328082', '120249176263700133', '120249301282660133'];
+  const PUB_SERVICIOS = [
+    ['curso', '🎓 Cursos y capacitación', /curso|capacita|diplomado|taller|clases/i],
+    ['manual', '📘 Manual WhatsApp con IA', /manual|kit de|\bkit\b/i],
+    ['marketing', '📣 Marketing digital / Publicidad', /marketing|publicidad|meta ads|google ads|campa[ñn]as|\bads\b|spot|logotipo|redes sociales/i],
+    ['agente', '🤖 Agente de IA / CRM / Automatización', /agente|\bcrm\b|automatiz|whats\s?app|whatblast|mensaj\w* masiv|mensajer[ií]a masiva|env[ií]o masivo|chatbot|\bbot\b|seguimiento en whatsapp|tr[aá]fico whatsapp/i],
+    ['app', '📱 Apps a la medida', /\bapps?\b|aplicaci[oó]n|sistema para|paquete inmobiliario/i],
+    ['web', '🌐 Página web / Tienda en línea', /p[aá]gina|\bweb\b|sitio|tienda en l[ií]nea|landing|cat[aá]logo|hostinger/i],
+    ['invitaciones', '💌 Invitaciones digitales', /invitaci/i]
+  ];
+  function pubServicio(l) {
+    const t = String(l.servicio_interes || '').trim();
+    for (const [k, , re] of PUB_SERVICIOS) if (t && re.test(t)) return k;
+    const ad = String(l.anuncio_id || '');
+    if (PUB_ANUNCIOS_MANUAL.includes(ad) || /manual/i.test(String(l.anuncio_titulo || ''))) return 'manual';
+    // Sin servicio escrito: se usa el anuncio por el que llegó.
+    if (ad === '120249176238150133') return 'agente';
+    if (['120249231006370133', '120249231006410133'].includes(ad)) return 'web';
+    if (['120248937084770133', '120249105067910133', '120249116954750133', '1137019691995408'].includes(ad)) return 'curso';
+    return t ? 'otro' : '__sin__';
+  }
+  const PUB_SERV_TEXTO = Object.assign(Object.fromEntries(PUB_SERVICIOS.map(([k, n]) => [k, n])), { otro: '❓ Otro (escribió su giro, no un servicio)', __sin__: 'Sin servicio registrado' });
+
   function pubCoincide(l) {
     if (pubF.estado !== 'todos' && l.estado !== pubF.estado) return false;
-    const serv = l.servicio_interes || '';
-    if (pubF.servicio === '__sin__' && serv) return false;
-    if (pubF.servicio !== 'todos' && pubF.servicio !== '__sin__' && serv !== pubF.servicio) return false;
+    if (pubF.servicio !== 'todos' && pubServicio(l) !== pubF.servicio) return false;
     const f = (l.fecha_registro || '').slice(0, 10);
     if (pubF.desde && f < pubF.desde) return false;
     if (pubF.hasta && f > pubF.hasta) return false;
@@ -2331,9 +2354,7 @@
     return (pubLeads || []).filter(l => {
       if (pubMotivo(l)) return false;
       if (pubF.estado !== 'todos' && l.estado !== pubF.estado) return false;
-      const serv = l.servicio_interes || '';
-      if (pubF.servicio === '__sin__' && serv) return false;
-      if (pubF.servicio !== 'todos' && pubF.servicio !== '__sin__' && serv !== pubF.servicio) return false;
+      if (pubF.servicio !== 'todos' && pubServicio(l) !== pubF.servicio) return false;
       const f = (l.fecha_registro || '').slice(0, 10);
       if (pubF.desde && f < pubF.desde) return false;
       if (pubF.hasta && f > pubF.hasta) return false;
@@ -2377,9 +2398,10 @@
     const nNunca = lista.filter(l => !l.fecha_ultima_publicidad).length;
     const optPlantillas = Object.entries(PUB_PLANTILLAS).map(([k, p]) => `<option value="${k}" ${pubPlantilla === k ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>`).join('');
     const optEstados = pubContar('estado').map(([k, n]) => `<option value="${escapeHtml(k)}" ${pubF.estado === k ? 'selected' : ''}>${escapeHtml(estadoLabels[k] || k)} (${n})</option>`).join('');
-    const optServ = pubContar('servicio_interes').map(([k, n]) => k
-      ? `<option value="${escapeHtml(k)}" ${pubF.servicio === k ? 'selected' : ''}>${escapeHtml(k)} (${n})</option>`
-      : `<option value="__sin__" ${pubF.servicio === '__sin__' ? 'selected' : ''}>Sin servicio registrado (${n})</option>`).join('');
+    const cuentaServ = new Map();
+    (pubLeads || []).filter(l => !pubMotivo(l)).forEach(l => { const k = pubServicio(l); cuentaServ.set(k, (cuentaServ.get(k) || 0) + 1); });
+    const optServ = [...PUB_SERVICIOS.map(x => x[0]), 'otro', '__sin__'].filter(k => cuentaServ.get(k))
+      .map(k => `<option value="${k}" ${pubF.servicio === k ? 'selected' : ''}>${escapeHtml(PUB_SERV_TEXTO[k])} (${cuentaServ.get(k)})</option>`).join('');
 
     let html = tabs + `<div class="pub-box">
       <div class="pub-titulo">📣 Mensaje de publicidad · sale del 2911</div>
@@ -2411,7 +2433,7 @@
         <input type="checkbox" data-pubid="${l.id}" ${pubSel.has(l.id) ? 'checked' : ''}>
         <span class="pub-datos">
           <b>${escapeHtml(l.nombre || 'Sin nombre')}</b>
-          <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')}${l.servicio_interes ? ' · ' + escapeHtml(l.servicio_interes) : ''} · ${(l.fecha_registro || '').slice(0, 10)}</small>
+          <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')} · ${escapeHtml(PUB_SERV_TEXTO[pubServicio(l)])} · ${(l.fecha_registro || '').slice(0, 10)}</small>
           <small>${l.fecha_ultima_publicidad ? '📬 Última publicidad: ' + new Date(l.fecha_ultima_publicidad).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '🆕 Nunca ha recibido publicidad'}</small>
         </span>
       </label>`).join('') : '<div class="loading-text">Ningún lead coincide con el filtro.</div>';
