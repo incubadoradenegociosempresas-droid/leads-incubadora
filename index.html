@@ -914,6 +914,67 @@
   .pub-env .pl-btn { flex: none; }
   .pub-env-resp { color: var(--success); font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
   .pub-box + .pub-filtros + .buscador, .estatus-resumen + .buscador { margin-bottom: 10px; }
+
+  /* ═══════ SELECTOR DE NEGOCIO + FITSEMANA (3-nov-2026) ═══════ */
+  #negocioScreen { display: none; min-height: 80vh; align-items: center; justify-content: center; }
+  #negocioScreen.show { display: flex; }
+  .neg-card { width: 100%; max-width: 420px; }
+  .neg-card h2 { margin: 0 0 6px; font-size: 22px; }
+  .neg-card .neg-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 20px; }
+  .neg-btn { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 12px; color: var(--text); font-family: inherit; cursor: pointer; transition: transform .1s, border-color .15s; }
+  .neg-btn:hover { border-color: var(--accent); }
+  .neg-btn:active { transform: scale(.98); }
+  .neg-btn.fit:hover { border-color: var(--success); }
+  .neg-btn .neg-ico { font-size: 30px; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 12px; background: var(--accent-dim); flex-shrink: 0; }
+  .neg-btn.fit .neg-ico { background: rgba(61,220,151,0.15); }
+  .neg-btn .neg-nom { font-weight: 700; font-size: 17px; }
+  .neg-btn .neg-desc { color: var(--text-dim); font-size: 12px; margin-top: 3px; }
+  .neg-btn .neg-num { margin-left: auto; font-weight: 800; font-size: 13px; padding: 4px 9px; border-radius: 99px; background: rgba(61,220,151,0.15); color: var(--success); white-space: nowrap; }
+  .neg-btn .neg-num:empty { display: none; }
+  .neg-email { color: var(--text-dim); font-size: 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .cambiar-btn { background: none; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  #fitScreen { display: none; }
+  #fitScreen.show { display: block; }
+  #fitScreen header .label { color: var(--success); }
+  .fit-resumen { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .fit-chip { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 9px 6px; text-align: center; cursor: pointer; font-family: inherit; color: var(--text); }
+  .fit-chip .n { display: block; font-size: 19px; font-weight: 800; }
+  .fit-chip .t { display: block; font-size: 10.5px; color: var(--text-dim); margin-top: 2px; line-height: 1.2; }
+  .fit-chip.sel { border-color: var(--success); box-shadow: 0 0 0 1px var(--success) inset; }
+  .fit-kpis { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .fit-kpi { flex: 1; min-width: 120px; background: rgba(61,220,151,0.08); border: 1px solid rgba(61,220,151,0.3); border-radius: 10px; padding: 10px 12px; }
+  .fit-kpi .k { font-size: 11px; color: var(--text-dim); }
+  .fit-kpi .v { font-size: 18px; font-weight: 800; color: var(--success); margin-top: 2px; }
+  .fit-opciones { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-dim); margin: 0 0 10px; }
+  .fit-lead { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+  .fit-lead.prueba { opacity: .55; }
+  .fit-lead, .fit-lead * { text-align: left; }
+  .fit-acciones button, .fit-acciones a { text-align: center !important; }
+  .chat-msg.fitvale .seg-tag, .chat-msg.fitsis .seg-tag { display: block; font-size: 10.5px; font-weight: 700; opacity: .75; margin-bottom: 3px; text-transform: none; letter-spacing: 0; }
+  .fit-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .fit-nom { font-weight: 700; font-size: 15px; }
+  .fit-tel { color: var(--text-dim); font-size: 12px; margin-top: 2px; }
+  .fit-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+  .fb-prospecto, .fb-filtrado { background: rgba(255,122,48,0.15); color: var(--accent); }
+  .fb-acepto { background: rgba(255,200,0,0.15); color: #FFC800; }
+  .fb-pagado { background: rgba(80,160,255,0.18); color: #7DB7FF; }
+  .fb-activo { background: rgba(61,220,151,0.18); color: var(--success); }
+  .fb-pago_fallido { background: rgba(255,92,92,0.28); color: #FF8A8A; }
+  .fb-excluido { background: rgba(255,92,92,0.15); color: var(--danger); }
+  .fb-cancelado { background: rgba(138,143,156,0.15); color: var(--text-dim); }
+  .fit-datos { font-size: 12px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; }
+  .fit-datos b { color: var(--text); font-weight: 600; }
+  .fit-ultimo { font-size: 13px; margin-top: 8px; padding: 8px 10px; background: #14171C; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 76px; overflow: hidden; }
+  .fit-ultimo .q { color: var(--text-dim); font-size: 11px; display: block; margin-bottom: 2px; }
+  .fit-acciones { display: flex; gap: 8px; margin-top: 10px; }
+  .fit-acciones button, .fit-acciones a { flex: 1; text-align: center; font-size: 12.5px; font-weight: 600; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); text-decoration: none; cursor: pointer; font-family: inherit; }
+  .fit-acciones a.wa { border-color: rgba(61,220,151,0.5); color: var(--success); }
+  .fit-alerta { margin-top: 8px; font-size: 12px; font-weight: 700; color: #FF8A8A; }
+  .fit-plan-box { align-self: stretch; background: #14171C; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+  .fit-plan-box summary { cursor: pointer; font-weight: 700; }
+  .fit-plan-box pre { white-space: pre-wrap; font-family: inherit; font-size: 12.5px; margin: 8px 0 0; color: var(--text); }
+  .chat-msg.fitvale { align-self: flex-end; background: rgba(61,220,151,0.14); border-bottom-right-radius: 3px; }
+  .chat-msg.fitsis { align-self: center; background: transparent; border: 1px dashed var(--border); color: var(--text-dim); font-size: 12.5px; max-width: 92%; }
 </style>
 </head>
 <body>
@@ -936,11 +997,52 @@
   </div>
 </div>
 
+<!-- ══════ SELECTOR DE NEGOCIO ══════ -->
+<div id="negocioScreen">
+  <div class="neg-card">
+    <h2>¿Qué negocio quieres ver?</h2>
+    <div class="neg-sub">Elige el CRM. Puedes cambiar en cualquier momento.</div>
+    <button class="neg-btn" id="negIncubadora" type="button">
+      <span class="neg-ico">🚀</span>
+      <span><span class="neg-nom" style="display:block">Incubadora de Negocios</span><span class="neg-desc" style="display:block">Leads de Karina · agentes, CRM, manual, cursos</span></span>
+    </button>
+    <button class="neg-btn fit" id="negFit" type="button">
+      <span class="neg-ico">💪</span>
+      <span><span class="neg-nom" style="display:block">FitSemana</span><span class="neg-desc" style="display:block">Leads de Vale · membresía de menú y rutina</span></span>
+      <span class="neg-num" id="negFitNum"></span>
+    </button>
+    <div class="neg-email"><span id="negEmail"></span><button class="cambiar-btn" id="negLogout" type="button">Cerrar sesión</button></div>
+  </div>
+</div>
+
+<!-- ══════ CRM FITSEMANA ══════ -->
+<div id="fitScreen">
+<div class="wrap">
+  <div class="logout-bar">
+    <button class="cambiar-btn" type="button" onclick="irSelector()">⇄ Cambiar negocio</button>
+    <button class="logout-btn" type="button" onclick="cerrarSesionGlobal()">Cerrar sesión</button>
+  </div>
+  <header>
+    <div class="label">FitSemana</div>
+    <h1>Leads y membresías</h1>
+  </header>
+  <div class="fit-kpis" id="fitKpis"></div>
+  <div class="fit-resumen" id="fitResumen"></div>
+  <input type="text" id="fitBuscador" class="buscador" placeholder="🔍 Buscar por nombre o teléfono...">
+  <div class="fit-opciones">
+    <label><input type="checkbox" id="fitVerPruebas"> Mostrar pruebas</label>
+    <button class="cambiar-btn" type="button" onclick="fitCargar()">↻ Actualizar</button>
+  </div>
+  <div id="fitLista" class="loading-text">Cargando...</div>
+</div>
+</div>
+
 <!-- ══════ APP (protegida) ══════ -->
 <div id="appScreen">
 <div class="wrap">
 
   <div class="logout-bar">
+    <button class="cambiar-btn" type="button" onclick="irSelector()">⇄ Cambiar negocio</button>
     <span id="userEmail"></span>
     <button class="logout-btn" id="logoutBtn">Cerrar sesión</button>
   </div>
@@ -1167,11 +1269,18 @@
     const { data } = await sb.auth.getSession();
     if (data.session) {
       loginScreen.style.display = 'none';
-      appScreen.classList.add('show');
       userEmail.textContent = data.session.user.email;
+      document.getElementById('negEmail').textContent = data.session.user.email;
+      // 3-nov-2026: primero se elige el negocio (Incubadora o FitSemana)
+      if (!appScreen.classList.contains('show') && !document.getElementById('fitScreen').classList.contains('show')) {
+        document.getElementById('negocioScreen').classList.add('show');
+        if (window.fitContarNuevos) window.fitContarNuevos();
+      }
     } else {
       loginScreen.style.display = 'flex';
       appScreen.classList.remove('show');
+      document.getElementById('negocioScreen').classList.remove('show');
+      document.getElementById('fitScreen').classList.remove('show');
     }
   }
 
@@ -2689,6 +2798,210 @@
   document.getElementById('chatOverlay').addEventListener('click', (e) => {
     if (e.target.id === 'chatOverlay') cerrarConversacion();
   });
+</script>
+<script>
+  /* ═══════════ SELECTOR DE NEGOCIO + CRM FITSEMANA (3-nov-2026) ═══════════ */
+  const FIT_ESTADOS = {
+    prospecto:   { t: 'Prospecto',        g: 'prospectos' },
+    filtrado:    { t: 'Pasó filtro',      g: 'prospectos' },
+    acepto:      { t: 'Por pagar',        g: 'porpagar' },
+    pagado:      { t: 'Pagó · sin plan',  g: 'pagados' },
+    activo:      { t: 'Activo',           g: 'activos' },
+    pago_fallido:{ t: 'Pago fallido',     g: 'fallidos' },
+    excluido:    { t: 'Excluido (salud)', g: 'excluidos' },
+    cancelado:   { t: 'Canceló',          g: 'cancelados' }
+  };
+  const FIT_GRUPOS = [
+    ['todos','Todos'], ['prospectos','Prospectos'], ['porpagar','Por pagar'], ['pagados','Pagó sin plan'],
+    ['activos','Activos'], ['fallidos','Pago fallido'], ['excluidos','Excluidos'], ['cancelados','Cancelados']
+  ];
+  let fitLeads = [];
+  let fitFiltro = 'todos';
+
+  function irSelector() {
+    document.getElementById('appScreen').classList.remove('show');
+    document.getElementById('fitScreen').classList.remove('show');
+    document.getElementById('negocioScreen').classList.add('show');
+    fitContarNuevos();
+    window.scrollTo(0, 0);
+  }
+  async function cerrarSesionGlobal() {
+    await sb.auth.signOut();
+    document.getElementById('appScreen').classList.remove('show');
+    document.getElementById('fitScreen').classList.remove('show');
+    await checkSession();
+  }
+  document.getElementById('negLogout').addEventListener('click', cerrarSesionGlobal);
+  document.getElementById('negIncubadora').addEventListener('click', () => {
+    document.getElementById('negocioScreen').classList.remove('show');
+    document.getElementById('appScreen').classList.add('show');
+    window.scrollTo(0, 0);
+  });
+  document.getElementById('negFit').addEventListener('click', () => {
+    document.getElementById('negocioScreen').classList.remove('show');
+    document.getElementById('fitScreen').classList.add('show');
+    window.scrollTo(0, 0);
+    fitCargar();
+  });
+
+  async function fitRpc(fn, args) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: await authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(args || {})
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  // Número en el botón de FitSemana: personas que escribieron en las últimas 24 h
+  async function fitContarNuevos() {
+    try {
+      const data = await fitRpc('fit_admin_leads');
+      const n = (data || []).filter(l => !l.es_prueba && l.ultimo_entrante_at && (Date.now() - new Date(l.ultimo_entrante_at).getTime()) < 86400000).length;
+      document.getElementById('negFitNum').textContent = n ? `${n} hoy` : '';
+    } catch (e) { /* sin permiso o sin sesión: no pasa nada */ }
+  }
+  window.fitContarNuevos = fitContarNuevos;
+
+  async function fitCargar() {
+    const lista = document.getElementById('fitLista');
+    lista.innerHTML = '<div class="loading-text">Cargando...</div>';
+    try {
+      fitLeads = await fitRpc('fit_admin_leads') || [];
+      fitPintar();
+    } catch (err) {
+      console.error(err);
+      lista.innerHTML = '<div class="loading-text">No se pudieron cargar los leads de FitSemana.</div>';
+    }
+  }
+
+  function fitVisibles() {
+    const verPruebas = document.getElementById('fitVerPruebas').checked;
+    return fitLeads.filter(l => verPruebas || !l.es_prueba);
+  }
+
+  function fitPintar() {
+    const base = fitVisibles();
+    const cuenta = { todos: base.length };
+    base.forEach(l => { const g = (FIT_ESTADOS[l.estado] || {}).g || 'prospectos'; cuenta[g] = (cuenta[g] || 0) + 1; });
+
+    // KPIs: ingreso mensual recurrente estimado y conversión
+    const activos = base.filter(l => ['activo','pagado','pago_fallido'].includes(l.estado));
+    const mrr = activos.reduce((s, l) => s + (l.plan === 'trimestral' ? 599 / 3 : 249), 0);
+    const pagaron = base.filter(l => l.pagado_at).length;
+    const conv = base.length ? Math.round(pagaron * 100 / base.length) : 0;
+    const hoy = base.filter(l => l.ultimo_entrante_at && (Date.now() - new Date(l.ultimo_entrante_at).getTime()) < 86400000).length;
+    document.getElementById('fitKpis').innerHTML = `
+      <div class="fit-kpi"><div class="k">Ingreso mensual estimado</div><div class="v">$${Math.round(mrr).toLocaleString('es-MX')}</div></div>
+      <div class="fit-kpi"><div class="k">Pagaron / leads</div><div class="v">${pagaron} / ${base.length} · ${conv}%</div></div>
+      <div class="fit-kpi"><div class="k">Escribieron hoy</div><div class="v">${hoy}</div></div>`;
+
+    document.getElementById('fitResumen').innerHTML = FIT_GRUPOS.map(([k, t]) =>
+      `<button type="button" class="fit-chip ${fitFiltro === k ? 'sel' : ''}" data-g="${k}"><span class="n">${cuenta[k] || 0}</span><span class="t">${t}</span></button>`).join('');
+
+    const q = document.getElementById('fitBuscador').value.trim().toLowerCase();
+    const qNum = q.replace(/\D/g, '');
+    const lista = base.filter(l => {
+      if (fitFiltro !== 'todos' && (FIT_ESTADOS[l.estado] || {}).g !== fitFiltro) return false;
+      if (!q) return true;
+      return String(l.nombre || '').toLowerCase().includes(q) || (qNum.length >= 3 && String(l.telefono || '').includes(qNum));
+    });
+
+    const cont = document.getElementById('fitLista');
+    if (!lista.length) { cont.innerHTML = '<div class="loading-text">No hay leads en esta vista.</div>'; return; }
+    cont.innerHTML = lista.map((l, i) => fitTarjeta(l, fitLeads.indexOf(l))).join('');
+  }
+
+  function fitTarjeta(l, idx) {
+    const est = FIT_ESTADOS[l.estado] || { t: l.estado };
+    const p = l.perfil || {};
+    const datos = [];
+    if (p.edad) datos.push(`<b>${escapeHtml(String(p.edad))}</b> años`);
+    if (p.sexo) datos.push(escapeHtml(String(p.sexo)));
+    if (p.peso_kg) datos.push(`<b>${escapeHtml(String(l.ultimo_peso || p.peso_kg))}</b> kg`);
+    if (p.estatura_cm) datos.push(`${escapeHtml(String(p.estatura_cm))} cm`);
+    if (p.objetivo) datos.push(`objetivo: <b>${escapeHtml(String(p.objetivo))}</b>`);
+    if (p.nivel) datos.push(escapeHtml(String(p.nivel)));
+    if (p.dias_semana) datos.push(`${escapeHtml(String(p.dias_semana))} días/sem`);
+    if (p.lugar) datos.push(escapeHtml(String(p.lugar)));
+    const membresia = [];
+    if (l.plan) membresia.push(`Plan <b>${l.plan === 'trimestral' ? 'trimestral $599' : 'mensual $249'}</b>`);
+    if (l.vigente_hasta) membresia.push(`vigente hasta <b>${new Date(l.vigente_hasta + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}</b>`);
+    if (l.semanas_entregadas) membresia.push(`<b>${l.semanas_entregadas}</b> semana${l.semanas_entregadas === 1 ? '' : 's'} entregada${l.semanas_entregadas === 1 ? '' : 's'}`);
+    if (l.correo) membresia.push(escapeHtml(l.correo));
+    let alerta = '';
+    if (l.estado === 'excluido') alerta = `⚠️ Excluido: ${escapeHtml(l.excluido_motivo || '')}${l.pagado_at ? ' · YA PAGÓ: reembolsar en Stripe' : ''}`;
+    else if (l.estado === 'pago_fallido') alerta = '⚠️ Su cobro falló: Vale ya le pidió actualizar su tarjeta';
+    else if (l.estado === 'pagado') alerta = '⏳ Pagó pero le faltan datos para su primer plan';
+    else if (l.checkin_pendiente) alerta = '⏳ Esperando su check-in semanal (peso y enfoque)';
+    const quien = l.ultimo_rol === 'cliente' ? '👤 Cliente' : '💪 Vale';
+    return `<div class="fit-lead ${l.es_prueba ? 'prueba' : ''}">
+      <div class="fit-top">
+        <div><div class="fit-nom">${escapeHtml(l.nombre || 'Sin nombre')}${l.es_prueba ? ' · prueba' : ''}</div>
+        <div class="fit-tel">${escapeHtml(l.telefono || '')} · ${tiempoRelativo(l.ultima_actividad)}</div></div>
+        <span class="fit-badge fb-${escapeHtml(l.estado || '')}">${escapeHtml(est.t || '')}</span>
+      </div>
+      ${datos.length ? `<div class="fit-datos">${datos.join(' · ')}</div>` : ''}
+      ${membresia.length ? `<div class="fit-datos">${membresia.join(' · ')}</div>` : ''}
+      ${alerta ? `<div class="fit-alerta">${alerta}</div>` : ''}
+      ${l.ultimo_mensaje ? `<div class="fit-ultimo"><span class="q">${quien}</span>${escapeHtml(l.ultimo_mensaje)}</div>` : ''}
+      <div class="fit-acciones">
+        <button type="button" onclick="fitAbrir(${idx})">💬 Ver conversación (${l.mensajes_cliente || 0})</button>
+        <a class="wa" href="${fitWa(l)}" target="_blank" rel="noopener">📲 Escribirle</a>
+      </div>
+    </div>`;
+  }
+
+  function fitWa(l) {
+    const tel = String(l.telefono || '').replace(/\D/g, '');
+    const nom = String(l.nombre || '').trim().split(' ')[0];
+    const txt = `Hola${nom && /[a-záéíóúñ]{2,}/i.test(nom) ? ' ' + nom : ''}, soy Jorge de FitSemana. ¿En qué te puedo ayudar?`;
+    return `https://wa.me/${tel}?text=${encodeURIComponent(txt)}`;
+  }
+
+  async function fitAbrir(idx) {
+    const l = fitLeads[idx];
+    if (!l) return;
+    const overlay = document.getElementById('chatOverlay');
+    const body = document.getElementById('chatBody');
+    document.getElementById('chatNombre').textContent = (l.nombre || 'Sin nombre') + ' · FitSemana';
+    document.getElementById('chatTel').textContent = l.telefono || '';
+    document.getElementById('chatWa').href = fitWa(l);
+    body.innerHTML = '<div class="chat-empty">Cargando conversación...</div>';
+    overlay.classList.add('open');
+    try {
+      const d = await fitRpc('fit_admin_chat', { p_telefono: l.telefono });
+      const fecha = f => f ? new Date(f).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      let html = '';
+      (d.planes || []).forEach(pl => {
+        html += `<details class="fit-plan-box"><summary>📋 Plan semana ${pl.semana} · ${pl.kcal || '?'} kcal · ${escapeHtml(pl.enfoque || 'general')} · ${fecha(pl.fecha)}${pl.enviado ? '' : ' · ⚠️ no se entregó'}</summary><pre>${escapeHtml(pl.dieta || '')}</pre><pre>${escapeHtml(pl.rutina || '')}</pre></details>`;
+      });
+      if ((d.pesos || []).length > 1) {
+        html += `<div class="fit-plan-box">⚖️ Pesos: ${(d.pesos).map(x => `<b>${x.peso}</b> kg (${new Date(x.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })})`).join(' → ')}</div>`;
+      }
+      const msgs = d.mensajes || [];
+      if (!msgs.length) html += '<div class="chat-empty">No hay mensajes registrados.</div>';
+      html += msgs.map(m => {
+        if (m.rol === 'cliente') return `<div class="chat-msg cliente"><span class="seg-tag">👤 Cliente</span><span class="ch-txt">${escapeHtml(m.texto)}</span><span class="ch-time">${fecha(m.fecha)}</span></div>`;
+        if (m.rol === 'agente') return `<div class="chat-msg fitvale"><span class="seg-tag">💪 Vale</span><span class="ch-txt">${escapeHtml(m.texto)}</span><span class="ch-time">${fecha(m.fecha)}</span></div>`;
+        return `<div class="chat-msg fitsis"><span class="seg-tag">⚙️ Sistema / no entregado</span><span class="ch-txt">${escapeHtml(m.texto)}</span><span class="ch-time">${fecha(m.fecha)}</span></div>`;
+      }).join('');
+      body.innerHTML = html;
+      body.scrollTop = body.scrollHeight;
+    } catch (err) {
+      console.error(err);
+      body.innerHTML = '<div class="chat-empty">Error al cargar la conversación.</div>';
+    }
+  }
+
+  document.getElementById('fitResumen').addEventListener('click', e => {
+    const b = e.target.closest('.fit-chip'); if (!b) return;
+    fitFiltro = b.dataset.g; fitPintar();
+  });
+  document.getElementById('fitBuscador').addEventListener('input', fitPintar);
+  document.getElementById('fitVerPruebas').addEventListener('change', fitPintar);
+  sb.auth.getSession().then(({ data }) => { if (data.session) fitContarNuevos(); });
 </script>
 </body>
 </html>
