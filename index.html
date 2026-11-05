@@ -915,6 +915,28 @@
   .pub-env-resp { color: var(--success); font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
   .pub-box + .pub-filtros + .buscador, .estatus-resumen + .buscador { margin-bottom: 10px; }
 
+  /* ═══════ CRM INVITACIONES DIGITALES (4-nov-2026) ═══════ */
+  #invScreen { display: none; }
+  #invScreen.show { display: block; }
+  #invScreen header .label { color: #F27BA8; }
+  .neg-btn.inv:hover { border-color: #F27BA8; }
+  .neg-btn.inv .neg-ico { background: rgba(242,123,168,0.15); }
+  .neg-btn.inv .neg-num { background: rgba(242,123,168,0.15); color: #F27BA8; }
+  .inv-kpi { background: rgba(242,123,168,0.08) !important; border-color: rgba(242,123,168,0.3) !important; }
+  .inv-kpi .v { color: #F27BA8 !important; }
+  .inv-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .inv-tabs button { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 11px; font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .inv-tabs button.sel { border-color: #F27BA8; box-shadow: 0 0 0 1px #F27BA8 inset; color: #F27BA8; }
+  .inv-chip.sel { border-color: #F27BA8 !important; box-shadow: 0 0 0 1px #F27BA8 inset !important; }
+  .inv-plan { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 99px; white-space: nowrap; background: rgba(242,123,168,.15); color: #F27BA8; text-transform: uppercase; letter-spacing: .5px; }
+  .inv-plan.basica { background: rgba(160,160,160,.15); color: #CFCFCF; }
+  .inv-plan.interactiva { background: rgba(90,170,255,.15); color: #7DB9FF; }
+  .inv-plan.premium { background: rgba(255,200,0,.15); color: #FFC800; }
+  .inv-num { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+  .inv-num div { background: #14171C; border-radius: 8px; padding: 7px 4px; text-align: center; }
+  .inv-num b { display: block; font-size: 16px; }
+  .inv-num span { font-size: 10px; color: var(--text-dim); }
+  .inv-estado-sel { width: 100%; margin-top: 10px; background: #14171C; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 7px 8px; font-family: inherit; font-size: 12.5px; }
   /* ═══════ SELECTOR DE NEGOCIO + FITSEMANA (3-nov-2026) ═══════ */
   #negocioScreen { display: none; min-height: 80vh; align-items: center; justify-content: center; }
   #negocioScreen.show { display: flex; }
@@ -1024,8 +1046,37 @@
       <span><span class="neg-nom" style="display:block">FitSemana</span><span class="neg-desc" style="display:block">Leads de Vale · membresía de menú y rutina</span></span>
       <span class="neg-num" id="negFitNum"></span>
     </button>
+    <button class="neg-btn inv" id="negInv" type="button">
+      <span class="neg-ico">💌</span>
+      <span><span class="neg-nom" style="display:block">Invitaciones Digitales</span><span class="neg-desc" style="display:block">Leads de Karina · clientes, invitaciones y confirmados</span></span>
+      <span class="neg-num" id="negInvNum"></span>
+    </button>
     <div class="neg-email"><span id="negEmail"></span><button class="cambiar-btn" id="negLogout" type="button">Cerrar sesión</button></div>
   </div>
+</div>
+
+<!-- ══════ CRM INVITACIONES DIGITALES (4-nov-2026) ══════ -->
+<div id="invScreen">
+<div class="wrap">
+  <div class="logout-bar">
+    <button class="cambiar-btn" type="button" onclick="irSelector()">⇄ Cambiar negocio</button>
+    <button class="logout-btn" type="button" onclick="cerrarSesionGlobal()">Cerrar sesión</button>
+  </div>
+  <header>
+    <div class="label">Invitaciones Digitales</div>
+    <h1>Leads y clientes</h1>
+  </header>
+  <div class="fit-kpis" id="invKpis"></div>
+  <div class="inv-tabs"><button type="button" id="invTabLeads" class="sel">💬 Leads</button><button type="button" id="invTabClientes">💌 Clientes</button></div>
+  <div class="fit-resumen" id="invResumen"></div>
+  <input type="text" id="invBuscador" class="buscador" placeholder="🔍 Buscar por nombre, teléfono o correo...">
+  <div class="fit-opciones">
+    <label><input type="checkbox" id="invVerPruebas"> Mostrar pruebas y demos</label>
+    <button class="cambiar-btn" type="button" onclick="invCargar()">↻ Actualizar</button>
+  </div>
+  <div id="invLista" class="loading-text">Cargando...</div>
+  <div class="fit-opciones" style="margin-top:14px"><a class="cambiar-btn" style="text-decoration:none" href="https://incubadoradenegociosempresas-droid.github.io/mi-invitacion-digital/demos/" target="_blank" rel="noopener">👁 Página de demos</a><a class="cambiar-btn" style="text-decoration:none" href="https://incubadoradenegociosempresas-droid.github.io/mi-invitacion-digital/editor/" target="_blank" rel="noopener">✏️ Editor de invitaciones</a></div>
+</div>
 </div>
 
 <!-- ══════ CRM FITSEMANA ══════ -->
@@ -1288,15 +1339,17 @@
       userEmail.textContent = data.session.user.email;
       document.getElementById('negEmail').textContent = data.session.user.email;
       // 3-nov-2026: primero se elige el negocio (Incubadora o FitSemana)
-      if (!appScreen.classList.contains('show') && !document.getElementById('fitScreen').classList.contains('show')) {
+      if (!appScreen.classList.contains('show') && !document.getElementById('fitScreen').classList.contains('show') && !document.getElementById('invScreen').classList.contains('show')) {
         document.getElementById('negocioScreen').classList.add('show');
         if (window.fitContarNuevos) window.fitContarNuevos();
+        if (window.invContarNuevos) window.invContarNuevos();
       }
     } else {
       loginScreen.style.display = 'flex';
       appScreen.classList.remove('show');
       document.getElementById('negocioScreen').classList.remove('show');
       document.getElementById('fitScreen').classList.remove('show');
+      document.getElementById('invScreen').classList.remove('show');
     }
   }
 
@@ -2863,14 +2916,17 @@
   function irSelector() {
     document.getElementById('appScreen').classList.remove('show');
     document.getElementById('fitScreen').classList.remove('show');
+    document.getElementById('invScreen').classList.remove('show');
     document.getElementById('negocioScreen').classList.add('show');
     fitContarNuevos();
+    if (window.invContarNuevos) window.invContarNuevos();
     window.scrollTo(0, 0);
   }
   async function cerrarSesionGlobal() {
     await sb.auth.signOut();
     document.getElementById('appScreen').classList.remove('show');
     document.getElementById('fitScreen').classList.remove('show');
+    document.getElementById('invScreen').classList.remove('show');
     await checkSession();
   }
   document.getElementById('negLogout').addEventListener('click', cerrarSesionGlobal);
@@ -3100,5 +3156,183 @@
   document.getElementById('fitEtapaFiltro').addEventListener('change', fitPintar);
   sb.auth.getSession().then(({ data }) => { if (data.session) fitContarNuevos(); });
 </script>
+<script>
+  /* ═══════════ CRM INVITACIONES DIGITALES (4-nov-2026) ═══════════
+     Datos: RPC inv_admin_crm() (solo admin). Leads = conversaciones de Karina sobre invitaciones;
+     clientes = invitaciones compradas (inv_invitaciones) con sus confirmaciones. */
+  const INV_BASE = 'https://incubadoradenegociosempresas-droid.github.io/mi-invitacion-digital';
+  const INV_PLAN = { basica: 'Básica $350', interactiva: 'Interactiva $990', premium: 'Premium $1,900', especial: 'Especial $3,000' };
+  const INV_EVENTO = { boda: 'Boda', xv: 'XV años', bautizo: 'Bautizo', comunion: 'Primera comunión', cumpleanos: 'Cumpleaños', baby: 'Baby shower', graduacion: 'Graduación', aniversario: 'Aniversario', corporativo: 'Empresarial', otro: 'Otro' };
+  const INV_GRUPOS_LEADS = [['todos', 'Todos'], ['hoy', 'Escribieron hoy'], ['calientes', 'Calientes / por pagar'], ['compraron', 'Compraron']];
+  const INV_GRUPOS_CLIENTES = [['todos', 'Todos'], ['sin_publicar', 'Sin publicar'], ['publicadas', 'Publicadas'], ['proximos', 'Evento en 30 días']];
+  let invDatos = { leads: [], clientes: [] };
+  let invTab = 'leads';
+  let invFiltro = 'todos';
+
+  function invEvento(texto) {
+    const t = String(texto || '').toLowerCase();
+    if (/\bboda|casamos|casar/.test(t)) return 'Boda';
+    if (/\bxv\b|quince|15 a[ñn]os/.test(t)) return 'XV años';
+    if (/bautizo/.test(t)) return 'Bautizo';
+    if (/baby ?shower/.test(t)) return 'Baby shower';
+    if (/comuni[oó]n/.test(t)) return 'Primera comunión';
+    if (/cumplea/.test(t)) return 'Cumpleaños';
+    if (/graduaci/.test(t)) return 'Graduación';
+    return '';
+  }
+  const invHace = f => f ? tiempoRelativo(f) : '';
+  const invEsHoy = f => f && (Date.now() - new Date(f).getTime()) < 86400000;
+  function invDiasAlEvento(c) { if (!/^\d{4}-\d{2}-\d{2}$/.test(c.fecha_evento || '')) return null; return Math.ceil((new Date(c.fecha_evento + 'T12:00:00') - Date.now()) / 86400000); }
+
+  async function invCargar() {
+    const lista = document.getElementById('invLista');
+    lista.innerHTML = '<div class="loading-text">Cargando...</div>';
+    try {
+      invDatos = await fitRpc('inv_admin_crm') || { leads: [], clientes: [] };
+      invPintar();
+    } catch (err) {
+      console.error(err);
+      lista.innerHTML = '<div class="loading-text">No se pudieron cargar las invitaciones.</div>';
+    }
+  }
+
+  async function invContarNuevos() {
+    try {
+      const d = await fitRpc('inv_admin_crm');
+      const n = (d.leads || []).filter(l => !l.es_prueba && invEsHoy(l.fecha_ultima_respuesta_cliente)).length;
+      document.getElementById('negInvNum').textContent = n ? `${n} hoy` : '';
+    } catch (e) { /* sin permiso: no pasa nada */ }
+  }
+
+  function invEnGrupo(x, g) {
+    if (g === 'todos') return true;
+    if (invTab === 'leads') {
+      if (g === 'hoy') return invEsHoy(x.fecha_ultima_respuesta_cliente);
+      if (g === 'calientes') return ['caliente', 'escalado'].includes(x.estado) && !x.plan_comprado;
+      if (g === 'compraron') return !!x.plan_comprado || /invitacion/i.test(x.producto_vendido || '');
+    } else {
+      if (g === 'sin_publicar') return !x.publicada;
+      if (g === 'publicadas') return x.publicada;
+      if (g === 'proximos') { const d = invDiasAlEvento(x); return d !== null && d >= 0 && d <= 30; }
+    }
+    return true;
+  }
+
+  function invPintar() {
+    const ver = document.getElementById('invVerPruebas').checked;
+    const leads = (invDatos.leads || []).filter(l => ver || !l.es_prueba);
+    const clientes = (invDatos.clientes || []).filter(c => ver || (!c.es_prueba && !c.es_demo));
+    const reales = (invDatos.clientes || []).filter(c => !c.es_prueba && !c.es_demo);
+    const leadsReales = (invDatos.leads || []).filter(l => !l.es_prueba);
+    const conv = leadsReales.length ? Math.round(reales.length * 100 / leadsReales.length) : 0;
+    const dinero = n => '$' + Number(n || 0).toLocaleString('es-MX');
+    document.getElementById('invKpis').innerHTML = `
+      <div class="fit-kpi inv-kpi"><div class="k">Vendido este mes</div><div class="v">${dinero(invDatos.ingresos_mes)}</div></div>
+      <div class="fit-kpi inv-kpi"><div class="k">Clientes / leads</div><div class="v">${reales.length} / ${leadsReales.length} · ${conv}%</div></div>
+      <div class="fit-kpi inv-kpi"><div class="k">Vendido total (mejoras ${dinero(invDatos.mejoras)})</div><div class="v">${dinero(invDatos.ingresos_total)}</div></div>`;
+
+    const base = invTab === 'leads' ? leads : clientes;
+    const grupos = invTab === 'leads' ? INV_GRUPOS_LEADS : INV_GRUPOS_CLIENTES;
+    if (!grupos.some(([k]) => k === invFiltro)) invFiltro = 'todos';
+    document.getElementById('invResumen').innerHTML = grupos.map(([k, t]) =>
+      `<button type="button" class="fit-chip inv-chip ${invFiltro === k ? 'sel' : ''}" data-ig="${k}"><span class="n">${base.filter(x => invEnGrupo(x, k)).length}</span><span class="t">${t}</span></button>`).join('');
+
+    const q = document.getElementById('invBuscador').value.trim().toLowerCase();
+    const qNum = q.replace(/\D/g, '');
+    const lista = base.filter(x => {
+      if (!invEnGrupo(x, invFiltro)) return false;
+      if (!q) return true;
+      const txt = [x.nombre, x.nombre_cliente, x.anfitriones, x.correo, x.slug].join(' ').toLowerCase();
+      return txt.includes(q) || (qNum.length >= 3 && String(x.telefono || '').includes(qNum));
+    });
+    const cont = document.getElementById('invLista');
+    if (!lista.length) { cont.innerHTML = `<div class="loading-text">${invTab === 'leads' ? 'No hay leads en esta vista.' : 'Aún no hay clientes en esta vista.'}</div>`; return; }
+    cont.innerHTML = lista.map(x => invTab === 'leads' ? invTarjetaLead(x) : invTarjetaCliente(x)).join('');
+  }
+
+  function invTarjetaLead(l) {
+    const evento = invEvento(l.texto_cliente) || invEvento(l.servicio_interes) || '';
+    const quien = l.ultimo_rol === 'user' ? '👤 Cliente' : '🤖 Karina';
+    const datos = [];
+    if (evento) datos.push(`Evento: <b>${escapeHtml(evento)}</b>`);
+    if (l.plan_comprado) datos.push(`Compró: <b>${escapeHtml(INV_PLAN[l.plan_comprado] || l.plan_comprado)}</b>`);
+    datos.push(`<b>${l.mensajes_cliente || 0}</b> mensajes del cliente`);
+    if (l.servicio_interes) datos.push(`Interés: ${escapeHtml(l.servicio_interes)}`);
+    if (l.anuncio_titulo) datos.push(`Anuncio: ${escapeHtml(l.anuncio_titulo)}`);
+    return `<div class="fit-lead ${l.es_prueba ? 'prueba' : ''}">
+      <div class="fit-top">
+        <div><div class="fit-nom">${escapeHtml(l.nombre || 'Sin nombre')}${l.es_prueba ? ' · prueba' : ''}</div>
+        <div class="fit-tel">${escapeHtml(l.telefono || '')} · ${invHace(l.ultima_actividad)}</div></div>
+        <span class="fit-badge">${escapeHtml(ESTADOS_TEXTO[l.estado] || l.estado || '')}</span>
+      </div>
+      <div class="fit-datos">${datos.join(' · ')}</div>
+      ${l.ultimo_mensaje ? `<div class="fit-ultimo"><span class="q">${quien}</span>${escapeHtml(l.ultimo_mensaje)}</div>` : ''}
+      <select class="inv-estado-sel" data-investado="${l.id}">${ESTADOS_PIPELINE.map(k => `<option value="${k}" ${l.estado === k ? 'selected' : ''}>${ESTADOS_TEXTO[k]}</option>`).join('')}</select>
+      <div class="fit-acciones">
+        <button type="button" data-invchat="${l.id}">💬 Conversación</button>
+        <a class="wa" href="${waJorge(l)}" target="_blank" rel="noopener">📲 Escribirle (2496)</a>
+      </div>
+    </div>`;
+  }
+
+  function invTarjetaCliente(c) {
+    const liga = `${INV_BASE}/i/?e=${encodeURIComponent(c.slug)}`;
+    const dias = invDiasAlEvento(c);
+    const fechaTxt = c.fecha_evento ? new Date(c.fecha_evento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'sin fecha';
+    let alerta = '';
+    if (!c.publicada && !c.es_demo) alerta = (Date.now() - new Date(c.creada).getTime()) > 3 * 86400000 ? '⚠️ Pagó hace más de 3 días y no la ha publicado: escríbele para ayudarle' : '⏳ Todavía no la publica';
+    else if (dias !== null && dias >= 0 && dias <= 7) alerta = `🎉 Su evento es en ${dias} día${dias === 1 ? '' : 's'}`;
+    const titulo = c.anfitriones || c.nombre_cliente || c.correo || 'Sin nombre';
+    const lead = c.lead_id ? (invDatos.leads || []).find(l => l.id === c.lead_id) : null;
+    const nombre = c.nombre_cliente || c.anfitriones || '';
+    const wa = c.telefono ? `https://wa.me/${String(c.telefono).replace(/\D/g, '')}?text=${encodeURIComponent('Hola' + (nombre ? ' ' + nombre.split(' ')[0] : '') + ', soy Jorge de Mi Invitación Digital. ¿Cómo vas con tu invitación? Si te atoras en algo, aquí te ayudo.')}` : '';
+    return `<div class="fit-lead ${c.es_prueba || c.es_demo ? 'prueba' : ''}">
+      <div class="fit-top">
+        <div><div class="fit-nom">${escapeHtml(titulo)}${c.es_demo ? ' · demo' : c.es_prueba ? ' · prueba' : ''}</div>
+        <div class="fit-tel">${escapeHtml(INV_EVENTO[c.tipo_evento] || c.tipo_evento || '')} · ${escapeHtml(fechaTxt)} · ${c.publicada ? '🟢 publicada' : '⚪ sin publicar'}</div></div>
+        <span class="inv-plan ${escapeHtml(c.plan)}">${escapeHtml((INV_PLAN[c.plan] || c.plan).split(' ')[0])}</span>
+      </div>
+      <div class="fit-datos">${escapeHtml(c.correo || '')}${c.telefono ? ' · ' + escapeHtml(c.telefono) : ''} · compró ${invHace(c.creada)} · editó ${invHace(c.actualizada)}${Number(c.pagado) ? ' · pagó <b>$' + Number(c.pagado).toLocaleString('es-MX') + '</b>' : ''}</div>
+      <div class="inv-num"><div><b>${c.personas}</b><span>personas vienen</span></div><div><b>${c.confirmaron}</b><span>confirmaron</span></div><div><b>${c.no_van}</b><span>no van</span></div><div><b>${c.fotos}</b><span>fotos</span></div></div>
+      ${alerta ? `<div class="fit-alerta">${alerta}</div>` : ''}
+      <div class="fit-acciones">
+        <a href="${liga}" target="_blank" rel="noopener">👁 Ver invitación</a>
+        ${lead ? `<button type="button" data-invchat="${lead.id}">💬 Conversación</button>` : ''}
+        ${wa ? `<a class="wa" href="${wa}" target="_blank" rel="noopener">📲 WhatsApp</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('negInv').addEventListener('click', () => {
+    document.getElementById('negocioScreen').classList.remove('show');
+    document.getElementById('invScreen').classList.add('show');
+    window.scrollTo(0, 0);
+    invCargar();
+  });
+  document.getElementById('invTabLeads').addEventListener('click', () => { invTab = 'leads'; invFiltro = 'todos'; document.getElementById('invTabLeads').classList.add('sel'); document.getElementById('invTabClientes').classList.remove('sel'); invPintar(); });
+  document.getElementById('invTabClientes').addEventListener('click', () => { invTab = 'clientes'; invFiltro = 'todos'; document.getElementById('invTabClientes').classList.add('sel'); document.getElementById('invTabLeads').classList.remove('sel'); invPintar(); });
+  document.getElementById('invResumen').addEventListener('click', e => { const b = e.target.closest('[data-ig]'); if (!b) return; invFiltro = b.dataset.ig; invPintar(); });
+  document.getElementById('invBuscador').addEventListener('input', invPintar);
+  document.getElementById('invVerPruebas').addEventListener('change', invPintar);
+  document.getElementById('invLista').addEventListener('click', e => {
+    const b = e.target.closest('[data-invchat]'); if (!b) return;
+    const l = (invDatos.leads || []).find(x => x.id === b.dataset.invchat); if (l) abrirConversacion(l);
+  });
+  document.getElementById('invLista').addEventListener('change', async e => {
+    const s = e.target.closest('[data-investado]'); if (!s) return;
+    const l = (invDatos.leads || []).find(x => x.id === s.dataset.investado); if (!l) return;
+    const nuevo = s.value; if (!ESTADOS_PIPELINE.includes(nuevo)) return;
+    const patch = { estado: nuevo };
+    if (['cerrado', 'no_interesado', 'perdido'].includes(nuevo)) patch.seguimiento_pausado = true;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?id=eq.${l.id}`, { method: 'PATCH', headers: { ...(await authHeaders()), 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify(patch) });
+      if (!res.ok) throw new Error(await res.text());
+      Object.assign(l, patch); invPintar();
+    } catch (err) { console.error(err); s.value = l.estado; alert('No se pudo cambiar el estado.'); }
+  });
+  window.invContarNuevos = invContarNuevos;
+  sb.auth.getSession().then(({ data }) => { if (data && data.session) invContarNuevos(); });
+</script>
+
 </body>
 </html>
