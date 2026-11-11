@@ -1828,7 +1828,8 @@
         headers: await authHeaders()
       });
       if (!res.ok) throw new Error('Error al cargar');
-      todosLosLeads = await res.json();
+      // 11-nov-2026 (Jorge): los leads del anuncio de invitaciones (título con "(invitaciones)") van solo al CRM de Invitaciones Digitales.
+      todosLosLeads = (await res.json()).filter(l => !/\(invitaciones\)/i.test(String(l.anuncio_titulo || '')));
       renderLeads();
     } catch (err) {
       console.error(err);
@@ -2450,7 +2451,8 @@
         if (parte.length < 1000) break;
         offset += 1000;
       }
-      pubLeads = todos;
+      // 11-nov-2026 (Jorge): a los leads del anuncio de invitaciones no se les manda publicidad de Incubadora.
+      pubLeads = todos.filter(l => !/\(invitaciones\)/i.test(String(l.anuncio_titulo || '')));
     } catch (err) {
       console.error(err);
       pubLeads = [];
