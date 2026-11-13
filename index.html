@@ -2153,6 +2153,37 @@
       <span class="${i.clase}">${i.estado}</span></div>`;
   }
 
+  // 13-nov-2026 (Jorge): de qué anuncio llegó cada lead (por ID del anuncio; el título que manda Meta casi siempre es el nombre de la página).
+  // Al crear o reactivar un anuncio, agrega aquí su ID (y en Karina: Nota del Manual / Nota del CRM).
+  const ANUNCIOS_NOMBRE = {
+    '120249632011150133': '🤖 CRM',
+    '120249368294730133': '🎬 Reel CRM',
+    '120249176238150133': '🤖 CRM (anterior)',
+    '120249609108280133': '📘 Manual',
+    '120249301282660133': '📘 Manual (anterior)',
+    '120249176263700133': '📘 Manual (anterior)',
+    '120249070958560133': '📘 Manual (anterior)',
+    '120249117105780133': '📘 Manual (anterior)',
+    '1137026285328082': '📘 Manual (publicación)',
+    '120249231006370133': '🌐 Página web',
+    '120249209296520133': '🌐 Página web (anterior)',
+    '120249198233980133': '🌐 Página web (anterior)',
+    '120241212062050133': '🌐 Web 2',
+    '120247352830700133': '🌐 Páginas Web',
+    '120249231006410133': '🎓 Cursos',
+    '120249209405640133': '🎓 Cursos (anterior)',
+    '120249198205350133': '🎓 Cursos (anterior)',
+    '120249609143550133': '💌 Invitaciones',
+    '120249105067910133': '🎓 Diplomado',
+    '120249116954750133': '🎓 Diplomado',
+    '1137019691995408': '🎓 Diplomado'
+  };
+  function anuncioNombre(l) {
+    const ad = String((l && l.anuncio_id) || '');
+    if (!ad) return '';
+    return ANUNCIOS_NOMBRE[ad] || ('📣 Anuncio …' + ad.slice(-6));
+  }
+
   function renderLeadCards(leads, hoy) {
     return leads.map(lead => {
       const respondio = respondioReal(lead);
@@ -2177,6 +2208,7 @@
       else if (oLower === 'manual') origenBadge = '<span class="badge origen-manual">✍️ Manual</span>';
       else if (oLower === 'referido') origenBadge = '<span class="badge origen-referido">🤝 Referido</span>';
       else origenBadge = '<span class="badge origen-whatsapp">💬 Directo</span>';
+      if (anuncioNombre(lead)) origenBadge = `<span class="badge origen-campana" title="Anuncio ${escapeHtml(String(lead.anuncio_id))}">📣 ${escapeHtml(anuncioNombre(lead))}</span>`;
       if (escalado) badge = `<span class="badge escalado">🔔 Quiere hablar contigo</span>`;
       else if (atrasado) badge = `<span class="badge atrasado">⚠️ Atrasado</span> ` + badge;
       else if (esHoy && !respondio) badge = `<span class="badge hoy">📅 Hoy</span> ` + badge;
@@ -2494,7 +2526,7 @@
   };
   // 28-oct-2026 (Jorge): el filtro "Servicio de interés" solo muestra SUS servicios. El texto libre que guarda Karina
   // (muchas veces es el giro del cliente) se agrupa aquí; lo que no es un servicio de Incubadora cae en "Otro".
-  const PUB_ANUNCIOS_MANUAL = ['120249070958560133', '120249117105780133', '1137026285328082', '120249176263700133', '120249301282660133'];
+  const PUB_ANUNCIOS_MANUAL = ['120249070958560133', '120249117105780133', '1137026285328082', '120249176263700133', '120249301282660133', '120249609108280133'];
   const PUB_SERVICIOS = [
     ['curso', '🎓 Cursos y capacitación', /curso|capacita|diplomado|taller|clases/i],
     ['manual', '📘 Manual WhatsApp con IA', /manual|kit de|\bkit\b/i],
@@ -2510,7 +2542,7 @@
     const ad = String(l.anuncio_id || '');
     if (PUB_ANUNCIOS_MANUAL.includes(ad) || /manual/i.test(String(l.anuncio_titulo || ''))) return 'manual';
     // Sin servicio escrito: se usa el anuncio por el que llegó.
-    if (ad === '120249176238150133') return 'agente';
+    if (['120249176238150133', '120249632011150133', '120249368294730133'].includes(ad)) return 'agente';
     if (['120249231006370133', '120249231006410133'].includes(ad)) return 'web';
     if (['120248937084770133', '120249105067910133', '120249116954750133', '1137019691995408'].includes(ad)) return 'curso';
     return t ? 'otro' : '__sin__';
@@ -2613,7 +2645,7 @@
         <input type="checkbox" data-pubid="${l.id}" ${pubSel.has(l.id) ? 'checked' : ''}>
         <span class="pub-datos">
           <b>${escapeHtml(l.nombre || 'Sin nombre')}</b>
-          <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')} · ${escapeHtml(PUB_SERV_TEXTO[pubServicio(l)])} · ${(l.fecha_registro || '').slice(0, 10)}</small>
+          <small>${escapeHtml(l.telefono)} · ${escapeHtml(estadoLabels[l.estado] || l.estado || '')} · ${escapeHtml(PUB_SERV_TEXTO[pubServicio(l)])}${anuncioNombre(l) ? ' · ' + escapeHtml(anuncioNombre(l)) : ''} · ${(l.fecha_registro || '').slice(0, 10)}</small>
           <small>${l.fecha_ultima_publicidad ? '📬 Última publicidad: ' + new Date(l.fecha_ultima_publicidad).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '🆕 Nunca ha recibido publicidad'}</small>
         </span>
       </label>`).join('') : '<div class="loading-text">Ningún lead coincide con el filtro.</div>';
