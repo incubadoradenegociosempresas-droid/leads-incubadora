@@ -2157,6 +2157,7 @@
   // Al crear o reactivar un anuncio, agrega aquí su ID (y en Karina: Nota del Manual / Nota del CRM).
   const ANUNCIOS_NOMBRE = {
     '120249700532550133': '⚡ Autoservicio $149',
+    '120249701058160133': '⚡ Agente autoservicio',
     '120249632011150133': '🤖 CRM',
     '120249368294730133': '🎬 Reel CRM',
     '120249176238150133': '🤖 CRM (anterior)',
@@ -2545,7 +2546,7 @@
     const ad = String(l.anuncio_id || '');
     if (PUB_ANUNCIOS_MANUAL.includes(ad) || /manual/i.test(String(l.anuncio_titulo || ''))) return 'manual';
     // Sin servicio escrito: se usa el anuncio por el que llegó.
-    if (['120249176238150133', '120249632011150133', '120249368294730133', '120249700532550133'].includes(ad) || /autoservicio/i.test(String(l.anuncio_titulo || ''))) return 'agente';
+    if (['120249176238150133', '120249632011150133', '120249368294730133', '120249700532550133', '120249701058160133'].includes(ad) || /autoservicio/i.test(String(l.anuncio_titulo || ''))) return 'agente';
     if (['120249231006370133', '120249231006410133'].includes(ad)) return 'web';
     if (['120248937084770133', '120249105067910133', '120249116954750133', '1137019691995408'].includes(ad)) return 'curso';
     return t ? 'otro' : '__sin__';
