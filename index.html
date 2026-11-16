@@ -2156,6 +2156,7 @@
   // 13-nov-2026 (Jorge): de qué anuncio llegó cada lead (por ID del anuncio; el título que manda Meta casi siempre es el nombre de la página).
   // Al crear o reactivar un anuncio, agrega aquí su ID (y en Karina: Nota del Manual / Nota del CRM).
   const ANUNCIOS_NOMBRE = {
+    '120249700532550133': '⚡ Autoservicio $149',
     '120249632011150133': '🤖 CRM',
     '120249368294730133': '🎬 Reel CRM',
     '120249176238150133': '🤖 CRM (anterior)',
@@ -2181,7 +2182,9 @@
   function anuncioNombre(l) {
     const ad = String((l && l.anuncio_id) || '');
     if (!ad) return '';
-    return ANUNCIOS_NOMBRE[ad] || ('📣 Anuncio …' + ad.slice(-6));
+    if (ANUNCIOS_NOMBRE[ad]) return ANUNCIOS_NOMBRE[ad];
+    if (/autoservicio/i.test(String(l.anuncio_titulo || ''))) return '⚡ Autoservicio';
+    return '📣 Anuncio …' + ad.slice(-6);
   }
 
   function renderLeadCards(leads, hoy) {
@@ -2542,7 +2545,7 @@
     const ad = String(l.anuncio_id || '');
     if (PUB_ANUNCIOS_MANUAL.includes(ad) || /manual/i.test(String(l.anuncio_titulo || ''))) return 'manual';
     // Sin servicio escrito: se usa el anuncio por el que llegó.
-    if (['120249176238150133', '120249632011150133', '120249368294730133'].includes(ad)) return 'agente';
+    if (['120249176238150133', '120249632011150133', '120249368294730133', '120249700532550133'].includes(ad) || /autoservicio/i.test(String(l.anuncio_titulo || ''))) return 'agente';
     if (['120249231006370133', '120249231006410133'].includes(ad)) return 'web';
     if (['120248937084770133', '120249105067910133', '120249116954750133', '1137019691995408'].includes(ad)) return 'curso';
     return t ? 'otro' : '__sin__';
