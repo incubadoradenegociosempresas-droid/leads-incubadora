@@ -1879,7 +1879,8 @@
       });
       if (!res.ok) throw new Error('Error al cargar');
       // 11-nov-2026 (Jorge): los leads del anuncio de invitaciones (título con "(invitaciones)") van solo al CRM de Invitaciones Digitales.
-      todosLosLeads = (await res.json()).filter(l => !/\((invitaciones|autoservicio)\)/i.test(String(l.anuncio_titulo || '')));
+      // 17-nov-2026 (Jorge): también salen de aquí los leads del autoservicio que llegan sin anuncio (liga wa.me, mensaje genérico): es_autoservicio.
+      todosLosLeads = (await res.json()).filter(l => !/\((invitaciones|autoservicio)\)/i.test(String(l.anuncio_titulo || '')) && l.es_autoservicio !== true);
       // 16-nov-2026 (Jorge): los leads del anuncio del autoservicio van solo al CRM "Agente Autoservicio".
       renderLeads();
     } catch (err) {
@@ -3601,6 +3602,13 @@
     window.scrollTo(0, 0);
     autoCargar();
   });
+  // 17-nov-2026: con la pantalla abierta se actualiza sola cada minuto y al volver a la app (los leads nuevos aparecen sin tocar ↻).
+  const autoVisible = () => document.getElementById('autoScreen').classList.contains('show') && document.visibilityState === 'visible';
+  setInterval(() => { if (autoVisible() && !document.getElementById('autoBuscador').value) autoCargarSilencioso(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (autoVisible()) autoCargarSilencioso(); });
+  async function autoCargarSilencioso() {
+    try { const d = await fitRpc('auto_admin_crm'); if (d) { autoDatos = d; autoPintar(); } } catch (e) { /* se reintenta en el siguiente minuto */ }
+  }
   document.getElementById('autoTabClientes').addEventListener('click', () => { autoElegirTab('clientes'); autoPintar(); });
   document.getElementById('autoTabLeads').addEventListener('click', () => { autoElegirTab('leads'); autoPintar(); });
   document.getElementById('autoResumen').addEventListener('click', e => { const b = e.target.closest('[data-ag]'); if (!b) return; autoFiltro = b.dataset.ag; autoPintar(); });
