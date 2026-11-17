@@ -3435,6 +3435,12 @@
   const AUTO_ESTADO = { pendiente_conexion: 'Falta conectar', pendiente_entrenamiento: 'Falta encender', activo: 'Activo', suspendido: 'Suspendido', cancelado: 'Cancelado' };
   let autoDatos = { leads: [], clientes: [] };
   let autoTab = 'clientes';
+  let autoPrimeraCarga = false;
+  function autoElegirTab(t) {
+    autoTab = t; autoFiltro = 'todos';
+    document.getElementById('autoTabClientes').classList.toggle('sel', t === 'clientes');
+    document.getElementById('autoTabLeads').classList.toggle('sel', t === 'leads');
+  }
   let autoFiltro = 'todos';
   const autoHoras = f => f ? (Date.now() - new Date(f).getTime()) / 3600000 : null;
   const autoDinero = n => '$' + Number(n || 0).toLocaleString('es-MX');
@@ -3481,7 +3487,12 @@
   async function autoCargar() {
     const lista = document.getElementById('autoLista');
     lista.innerHTML = '<div class="loading-text">Cargando...</div>';
-    try { autoDatos = await fitRpc('auto_admin_crm') || { leads: [], clientes: [] }; autoPintar(); }
+    try {
+      autoDatos = await fitRpc('auto_admin_crm') || { leads: [], clientes: [] };
+      // 16-nov (Jorge): si aún no hay clientes reales, abrir directo en Leads
+      if (!autoPrimeraCarga) { autoPrimeraCarga = true; if (!(autoDatos.clientes || []).some(c => !c.es_demo)) autoElegirTab('leads'); }
+      autoPintar();
+    }
     catch (err) { console.error(err); lista.innerHTML = '<div class="loading-text">No se pudieron cargar los clientes del autoservicio.</div>'; }
   }
   async function autoContarNuevos() {
@@ -3507,6 +3518,8 @@
       <div class="fit-kpi auto-kpi"><div class="k">Activos · en alta</div><div class="v">${activos} · ${enAlta}</div></div>
       <div class="fit-kpi auto-kpi"><div class="k">Cobrado este mes</div><div class="v">${autoDinero(autoDatos.cobrado_mes)}</div></div>
       <div class="fit-kpi auto-kpi"><div class="k">Clientes / leads</div><div class="v">${reales.length} / ${leadsReales.length} · ${conv}%</div></div>`;
+    document.getElementById('autoTabClientes').textContent = `⚡ Clientes (${clientes.length})`;
+    document.getElementById('autoTabLeads').textContent = `💬 Leads (${leads.length})`;
     const base = autoTab === 'clientes' ? clientes : leads;
     const grupos = autoTab === 'clientes' ? AUTO_GRUPOS_CLIENTES : AUTO_GRUPOS_LEADS;
     if (!grupos.some(([k]) => k === autoFiltro)) autoFiltro = 'todos';
@@ -3588,8 +3601,8 @@
     window.scrollTo(0, 0);
     autoCargar();
   });
-  document.getElementById('autoTabClientes').addEventListener('click', () => { autoTab = 'clientes'; autoFiltro = 'todos'; document.getElementById('autoTabClientes').classList.add('sel'); document.getElementById('autoTabLeads').classList.remove('sel'); autoPintar(); });
-  document.getElementById('autoTabLeads').addEventListener('click', () => { autoTab = 'leads'; autoFiltro = 'todos'; document.getElementById('autoTabLeads').classList.add('sel'); document.getElementById('autoTabClientes').classList.remove('sel'); autoPintar(); });
+  document.getElementById('autoTabClientes').addEventListener('click', () => { autoElegirTab('clientes'); autoPintar(); });
+  document.getElementById('autoTabLeads').addEventListener('click', () => { autoElegirTab('leads'); autoPintar(); });
   document.getElementById('autoResumen').addEventListener('click', e => { const b = e.target.closest('[data-ag]'); if (!b) return; autoFiltro = b.dataset.ag; autoPintar(); });
   document.getElementById('autoBuscador').addEventListener('input', autoPintar);
   document.getElementById('autoVerPruebas').addEventListener('change', autoPintar);
