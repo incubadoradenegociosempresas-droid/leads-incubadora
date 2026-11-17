@@ -915,6 +915,25 @@
   .pub-env-resp { color: var(--success); font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
   .pub-box + .pub-filtros + .buscador, .estatus-resumen + .buscador { margin-bottom: 10px; }
 
+  /* ═══════ CRM AGENTE AUTOSERVICIO (16-nov-2026) ═══════ */
+  #autoScreen { display: none; }
+  #autoScreen.show { display: block; }
+  #autoScreen header .label { color: #F5B83D; }
+  .neg-btn.auto:hover { border-color: #F5B83D; }
+  .neg-btn.auto .neg-ico { background: rgba(245,184,61,0.15); }
+  .neg-btn.auto .neg-num { background: rgba(245,184,61,0.15); color: #F5B83D; }
+  .auto-kpi { background: rgba(245,184,61,0.08) !important; border-color: rgba(245,184,61,0.3) !important; }
+  .auto-kpi .v { color: #F5B83D !important; }
+  #autoScreen .inv-tabs button.sel { border-color: #F5B83D; box-shadow: 0 0 0 1px #F5B83D inset; color: #F5B83D; }
+  .auto-pasos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 10px; }
+  .auto-pasos div { background: #14171C; border-radius: 8px; padding: 6px 2px; text-align: center; font-size: 10px; color: var(--text-dim); line-height: 1.25; }
+  .auto-pasos div.ok { background: rgba(61,220,151,0.12); color: var(--success); font-weight: 700; }
+  .auto-pasos div.ya { outline: 1px solid #F5B83D; color: #F5B83D; font-weight: 700; }
+  .auto-plan { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 99px; white-space: nowrap; background: rgba(245,184,61,.15); color: #F5B83D; text-transform: uppercase; letter-spacing: .5px; }
+  .auto-plan.off { background: rgba(255,92,92,.15); color: var(--danger); }
+  .auto-uso { height: 6px; background: #14171C; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .auto-uso i { display: block; height: 100%; background: #F5B83D; }
+
   /* ═══════ CRM INVITACIONES DIGITALES (4-nov-2026) ═══════ */
   #invScreen { display: none; }
   #invScreen.show { display: block; }
@@ -1051,8 +1070,37 @@
       <span><span class="neg-nom" style="display:block">Invitaciones Digitales</span><span class="neg-desc" style="display:block">Leads de Karina · clientes, invitaciones y confirmados</span></span>
       <span class="neg-num" id="negInvNum"></span>
     </button>
+    <button class="neg-btn auto" id="negAuto" type="button">
+      <span class="neg-ico">⚡</span>
+      <span><span class="neg-nom" style="display:block">Agente Autoservicio</span><span class="neg-desc" style="display:block">Clientes del autoservicio · altas, cobros y uso · leads de su anuncio</span></span>
+      <span class="neg-num" id="negAutoNum"></span>
+    </button>
     <div class="neg-email"><span id="negEmail"></span><button class="cambiar-btn" id="negLogout" type="button">Cerrar sesión</button></div>
   </div>
+</div>
+
+<!-- ══════ CRM AGENTE AUTOSERVICIO (16-nov-2026) ══════ -->
+<div id="autoScreen">
+<div class="wrap">
+  <div class="logout-bar">
+    <button class="cambiar-btn" type="button" onclick="irSelector()">⇄ Cambiar negocio</button>
+    <button class="logout-btn" type="button" onclick="cerrarSesionGlobal()">Cerrar sesión</button>
+  </div>
+  <header>
+    <div class="label">Agente Autoservicio</div>
+    <h1>Clientes y leads</h1>
+  </header>
+  <div class="fit-kpis" id="autoKpis"></div>
+  <div class="inv-tabs"><button type="button" id="autoTabClientes" class="sel">⚡ Clientes</button><button type="button" id="autoTabLeads">💬 Leads</button></div>
+  <div class="fit-resumen" id="autoResumen"></div>
+  <input type="text" id="autoBuscador" class="buscador" placeholder="🔍 Buscar por negocio, nombre, teléfono o correo...">
+  <div class="fit-opciones">
+    <label><input type="checkbox" id="autoVerPruebas"> Mostrar pruebas y demos</label>
+    <button class="cambiar-btn" type="button" onclick="autoCargar()">↻ Actualizar</button>
+  </div>
+  <div id="autoLista" class="loading-text">Cargando...</div>
+  <div class="fit-opciones" style="margin-top:14px"><a class="cambiar-btn" style="text-decoration:none" href="https://incubadoradeempresas.com.mx/tablero" target="_blank" rel="noopener">📊 Tablero de clientes</a><a class="cambiar-btn" style="text-decoration:none" href="https://incubadoradeempresas.com.mx/panel" target="_blank" rel="noopener">🧩 Panel del cliente</a><a class="cambiar-btn" style="text-decoration:none" href="https://dashboard.stripe.com/subscriptions" target="_blank" rel="noopener">💳 Stripe</a></div>
+</div>
 </div>
 
 <!-- ══════ CRM INVITACIONES DIGITALES (4-nov-2026) ══════ -->
@@ -1339,10 +1387,11 @@
       userEmail.textContent = data.session.user.email;
       document.getElementById('negEmail').textContent = data.session.user.email;
       // 3-nov-2026: primero se elige el negocio (Incubadora o FitSemana)
-      if (!appScreen.classList.contains('show') && !document.getElementById('fitScreen').classList.contains('show') && !document.getElementById('invScreen').classList.contains('show')) {
+      if (!appScreen.classList.contains('show') && !document.getElementById('fitScreen').classList.contains('show') && !document.getElementById('invScreen').classList.contains('show') && !document.getElementById('autoScreen').classList.contains('show')) {
         document.getElementById('negocioScreen').classList.add('show');
         if (window.fitContarNuevos) window.fitContarNuevos();
         if (window.invContarNuevos) window.invContarNuevos();
+        if (window.autoContarNuevos) window.autoContarNuevos();
       }
     } else {
       loginScreen.style.display = 'flex';
@@ -1350,6 +1399,7 @@
       document.getElementById('negocioScreen').classList.remove('show');
       document.getElementById('fitScreen').classList.remove('show');
       document.getElementById('invScreen').classList.remove('show');
+      document.getElementById('autoScreen').classList.remove('show');
     }
   }
 
@@ -1829,7 +1879,8 @@
       });
       if (!res.ok) throw new Error('Error al cargar');
       // 11-nov-2026 (Jorge): los leads del anuncio de invitaciones (título con "(invitaciones)") van solo al CRM de Invitaciones Digitales.
-      todosLosLeads = (await res.json()).filter(l => !/\(invitaciones\)/i.test(String(l.anuncio_titulo || '')));
+      todosLosLeads = (await res.json()).filter(l => !/\((invitaciones|autoservicio)\)/i.test(String(l.anuncio_titulo || '')));
+      // 16-nov-2026 (Jorge): los leads del anuncio del autoservicio van solo al CRM "Agente Autoservicio".
       renderLeads();
     } catch (err) {
       console.error(err);
@@ -2955,9 +3006,11 @@
     document.getElementById('appScreen').classList.remove('show');
     document.getElementById('fitScreen').classList.remove('show');
     document.getElementById('invScreen').classList.remove('show');
+    document.getElementById('autoScreen').classList.remove('show');
     document.getElementById('negocioScreen').classList.add('show');
     fitContarNuevos();
     if (window.invContarNuevos) window.invContarNuevos();
+    if (window.autoContarNuevos) window.autoContarNuevos();
     window.scrollTo(0, 0);
   }
   async function cerrarSesionGlobal() {
@@ -2965,6 +3018,7 @@
     document.getElementById('appScreen').classList.remove('show');
     document.getElementById('fitScreen').classList.remove('show');
     document.getElementById('invScreen').classList.remove('show');
+    document.getElementById('autoScreen').classList.remove('show');
     await checkSession();
   }
   document.getElementById('negLogout').addEventListener('click', cerrarSesionGlobal);
@@ -3370,6 +3424,193 @@
   });
   window.invContarNuevos = invContarNuevos;
   sb.auth.getSession().then(({ data }) => { if (data && data.session) invContarNuevos(); });
+</script>
+<script>
+  /* ═══════════ CRM AGENTE AUTOSERVICIO (16-nov-2026) ═══════════
+     Datos: RPC auto_admin_crm() (solo admin).
+     Clientes = negocios de autoservicio (saas_tenants) con su alta, cobro, uso y actividad.
+     Leads = pláticas de Karina del anuncio del autoservicio, que lo pidieron o que recibieron su liga. */
+  const AUTO_GRUPOS_CLIENTES = [['todos', 'Todos'], ['atender', 'Necesitan ayuda'], ['alta', 'En alta'], ['activos', 'Activos'], ['baja', 'Suspendidos / cancelados']];
+  const AUTO_GRUPOS_LEADS = [['todos', 'Todos'], ['hoy', 'Escribieron hoy'], ['liga', 'Recibieron la liga'], ['clientes', 'Ya son clientes']];
+  const AUTO_ESTADO = { pendiente_conexion: 'Falta conectar', pendiente_entrenamiento: 'Falta encender', activo: 'Activo', suspendido: 'Suspendido', cancelado: 'Cancelado' };
+  let autoDatos = { leads: [], clientes: [] };
+  let autoTab = 'clientes';
+  let autoFiltro = 'todos';
+  const autoHoras = f => f ? (Date.now() - new Date(f).getTime()) / 3600000 : null;
+  const autoDinero = n => '$' + Number(n || 0).toLocaleString('es-MX');
+
+  // Paso del alta: 1 pagó, 2 creó acceso, 3 describió su negocio, 4 conectó WhatsApp, 5 agente encendido
+  function autoPaso(c) {
+    if (c.activo && c.estado_alta === 'activo') return 5;
+    if (c.whatsapp_conectado_en) return 4;
+    if (c.negocio_listo) return 3;
+    if (c.creo_acceso) return 2;
+    return 1;
+  }
+  // Lo que Jorge tiene que atender, con prioridad
+  function autoAlerta(c) {
+    const h = autoHoras(c.fecha_registro) || 0;
+    if (c.estado_alta === 'cancelado') return '';
+    if (c.estado_alta === 'suspendido') return '⛔ Suspendido por falta de pago: escríbele para reactivarlo.';
+    if (c.gracia_hasta) return '💳 Falló su cobro: Stripe reintenta; si no paga, se suspende el ' + new Date(c.gracia_hasta).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) + '.';
+    if (c.conexion_error) return '⚠️ Error al conectar su WhatsApp: ' + c.conexion_error;
+    const p = autoPaso(c);
+    if (p === 1 && h > 12) return '⚠️ Pagó hace ' + Math.round(h) + ' h y no ha creado su acceso al panel.';
+    if (p === 2 && h > 24) return '⚠️ Creó su acceso pero no ha descrito su negocio.';
+    if (p === 3 && h > 24) return '⚠️ Ya describió su negocio pero no ha conectado su WhatsApp.';
+    if (p === 4 && h > 24) return '⚠️ Conectó su WhatsApp pero no ha encendido el agente.';
+    if (p === 5 && c.limite_contactos && c.contactos_mes / c.limite_contactos >= 0.8) return '📈 Va en ' + Math.round(c.contactos_mes * 100 / c.limite_contactos) + '% de sus contactos: oportunidad de subirlo de plan.';
+    if (p === 5 && (autoHoras(c.ultimo_mensaje) || 999) > 72) return '💤 Su agente no ha recibido mensajes en 3 días: revisa que tenga clientes o anuncios.';
+    return '';
+  }
+  function autoEnGrupo(x, g) {
+    if (g === 'todos') return true;
+    if (autoTab === 'clientes') {
+      if (g === 'atender') return !!autoAlerta(x) && !/📈/.test(autoAlerta(x));
+      if (g === 'alta') return autoPaso(x) < 5 && !['suspendido', 'cancelado'].includes(x.estado_alta);
+      if (g === 'activos') return autoPaso(x) === 5;
+      if (g === 'baja') return ['suspendido', 'cancelado'].includes(x.estado_alta);
+    } else {
+      if (g === 'hoy') return invEsHoy(x.fecha_ultima_respuesta_cliente);
+      if (g === 'liga') return !!x.recibio_liga;
+      if (g === 'clientes') return !!x.tenant_id;
+    }
+    return true;
+  }
+
+  async function autoCargar() {
+    const lista = document.getElementById('autoLista');
+    lista.innerHTML = '<div class="loading-text">Cargando...</div>';
+    try { autoDatos = await fitRpc('auto_admin_crm') || { leads: [], clientes: [] }; autoPintar(); }
+    catch (err) { console.error(err); lista.innerHTML = '<div class="loading-text">No se pudieron cargar los clientes del autoservicio.</div>'; }
+  }
+  async function autoContarNuevos() {
+    try {
+      const d = await fitRpc('auto_admin_crm');
+      const atender = (d.clientes || []).filter(c => !c.es_demo && autoAlerta(c) && !/📈/.test(autoAlerta(c))).length;
+      const hoy = (d.leads || []).filter(l => !l.es_prueba && invEsHoy(l.fecha_ultima_respuesta_cliente)).length;
+      document.getElementById('negAutoNum').textContent = atender ? `${atender} por atender` : (hoy ? `${hoy} hoy` : '');
+    } catch (e) { /* sin permiso */ }
+  }
+
+  function autoPintar() {
+    const ver = document.getElementById('autoVerPruebas').checked;
+    const clientes = (autoDatos.clientes || []).filter(c => ver || !c.es_demo);
+    const leads = (autoDatos.leads || []).filter(l => ver || !l.es_prueba);
+    const reales = (autoDatos.clientes || []).filter(c => !c.es_demo);
+    const activos = reales.filter(c => autoPaso(c) === 5).length;
+    const enAlta = reales.filter(c => autoPaso(c) < 5 && !['suspendido', 'cancelado'].includes(c.estado_alta)).length;
+    const leadsReales = (autoDatos.leads || []).filter(l => !l.es_prueba);
+    const conv = leadsReales.length ? Math.round(reales.length * 100 / leadsReales.length) : 0;
+    document.getElementById('autoKpis').innerHTML = `
+      <div class="fit-kpi auto-kpi"><div class="k">Ingreso mensual (MRR)</div><div class="v">${autoDinero(autoDatos.mrr)}</div></div>
+      <div class="fit-kpi auto-kpi"><div class="k">Activos · en alta</div><div class="v">${activos} · ${enAlta}</div></div>
+      <div class="fit-kpi auto-kpi"><div class="k">Cobrado este mes</div><div class="v">${autoDinero(autoDatos.cobrado_mes)}</div></div>
+      <div class="fit-kpi auto-kpi"><div class="k">Clientes / leads</div><div class="v">${reales.length} / ${leadsReales.length} · ${conv}%</div></div>`;
+    const base = autoTab === 'clientes' ? clientes : leads;
+    const grupos = autoTab === 'clientes' ? AUTO_GRUPOS_CLIENTES : AUTO_GRUPOS_LEADS;
+    if (!grupos.some(([k]) => k === autoFiltro)) autoFiltro = 'todos';
+    document.getElementById('autoResumen').innerHTML = grupos.map(([k, t]) =>
+      `<button type="button" class="fit-chip ${autoFiltro === k ? 'sel' : ''}" data-ag="${k}"><span class="n">${base.filter(x => autoEnGrupo(x, k)).length}</span><span class="t">${t}</span></button>`).join('');
+    const q = document.getElementById('autoBuscador').value.trim().toLowerCase();
+    const qNum = q.replace(/\D/g, '');
+    const lista = base.filter(x => {
+      if (!autoEnGrupo(x, autoFiltro)) return false;
+      if (!q) return true;
+      const txt = [x.nombre, x.nombre_negocio, x.correo, x.whatsapp_numero].join(' ').toLowerCase();
+      return txt.includes(q) || (qNum.length >= 3 && (String(x.telefono || '') + ' ' + String(x.telefono_dueno || '') + ' ' + String(x.whatsapp_numero || '')).includes(qNum));
+    });
+    const cont = document.getElementById('autoLista');
+    if (!lista.length) { cont.innerHTML = `<div class="loading-text">${autoTab === 'clientes' ? 'Aún no hay clientes en esta vista. En cuanto alguien pague su plan, aparece aquí solo.' : 'No hay leads en esta vista.'}</div>`; return; }
+    cont.innerHTML = lista.map(x => autoTab === 'clientes' ? autoTarjetaCliente(x) : autoTarjetaLead(x)).join('');
+  }
+
+  function autoTarjetaCliente(c) {
+    const paso = autoPaso(c);
+    const nombres = ['Pagó', 'Creó acceso', 'Describió negocio', 'Conectó WhatsApp', 'Agente encendido'];
+    // Pasos hechos en verde; el siguiente que le toca al cliente, en amarillo
+    const pasos = nombres.map((t, i) => `<div class="${i + 1 <= paso ? 'ok' : (i === paso ? 'ya' : '')}">${i + 1 <= paso ? '✓ ' : ''}${t}</div>`).join('');
+    const pct = c.limite_contactos ? Math.min(100, Math.round(c.contactos_mes * 100 / c.limite_contactos)) : 0;
+    const alerta = autoAlerta(c);
+    const baja = ['suspendido', 'cancelado'].includes(c.estado_alta);
+    const datos = [];
+    datos.push(`Pagó ${tiempoRelativo(c.fecha_registro)}`);
+    if (c.proximo_cobro) datos.push(`próximo cobro <b>${new Date(c.proximo_cobro + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}</b>`);
+    if (Number(c.pagado_total)) datos.push(`pagado <b>${autoDinero(c.pagado_total)}</b>`);
+    if (c.whatsapp_numero) datos.push(`agente en <b>${escapeHtml(c.whatsapp_numero)}</b>`);
+    const tel = String(c.telefono_dueno || '').replace(/\D/g, '');
+    const nombre = String(c.nombre_negocio || '').split(' ')[0];
+    const wa = tel ? `https://wa.me/${tel}?text=${encodeURIComponent('Hola, soy Jorge de Incubadora. Vi que ya tienes tu agente de WhatsApp con IA' + (nombre ? ' para ' + c.nombre_negocio : '') + '. ¿Cómo vas? Si te atoras en algún paso, aquí te ayudo.')}` : '';
+    const lead = c.lead_id ? (autoDatos.leads || []).find(l => l.id === c.lead_id) : null;
+    return `<div class="fit-lead ${c.es_demo ? 'prueba' : ''}">
+      <div class="fit-top">
+        <div><div class="fit-nom">${escapeHtml(c.nombre_negocio || 'Sin nombre')}${c.es_demo ? ' · demo' : ''}</div>
+        <div class="fit-tel">${escapeHtml(c.correo || '')}${tel ? ' · ' + escapeHtml(tel) : ''} · ${escapeHtml(AUTO_ESTADO[c.estado_alta] || c.estado_alta || '')}</div></div>
+        <span class="auto-plan ${baja ? 'off' : ''}">${escapeHtml(c.plan_nombre || c.plan_clave || 'plan')} ${autoDinero(c.cuota)}</span>
+      </div>
+      <div class="auto-pasos">${pasos}</div>
+      <div class="inv-num"><div><b>${c.contactos_mes}/${c.limite_contactos}</b><span>contactos del mes</span></div><div><b>${c.clientes_crm}</b><span>clientes en su CRM</span></div><div><b>${c.mensajes_7d}</b><span>mensajes 7 días</span></div><div><b>${c.citas_pedidos_abiertos}</b><span>citas y pedidos</span></div></div>
+      <div class="auto-uso"><i style="width:${pct}%"></i></div>
+      <div class="fit-datos" style="margin-top:8px">${datos.join(' · ')}${c.ultimo_mensaje ? ' · último mensaje ' + tiempoRelativo(c.ultimo_mensaje) : ''}${Number(c.gasto_ia_mes) ? ' · IA ' + autoDinero(c.gasto_ia_mes) + ' este mes' : ''}${c.conexiones_fallidas ? ' · ' + c.conexiones_fallidas + ' intento(s) fallido(s) de conexión' : ''}</div>
+      ${alerta ? `<div class="fit-alerta">${escapeHtml(alerta)}</div>` : ''}
+      <div class="fit-acciones">
+        ${wa ? `<a class="wa" href="${wa}" target="_blank" rel="noopener">📲 WhatsApp al dueño</a>` : ''}
+        ${lead ? `<button type="button" data-autochat="${lead.id}">💬 Plática con Karina</button>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function autoTarjetaLead(l) {
+    const quien = l.ultimo_rol === 'user' ? '👤 Cliente' : '🤖 Karina';
+    const datos = [`<b>${l.mensajes_cliente || 0}</b> mensajes del cliente`];
+    if (l.tenant_id) datos.unshift('✅ <b>Ya es cliente</b>');
+    else if (l.recibio_liga) datos.unshift('🔗 Recibió la liga de pago');
+    if (l.anuncio_titulo) datos.push(`Anuncio: ${escapeHtml(l.anuncio_titulo)}`);
+    return `<div class="fit-lead ${l.es_prueba ? 'prueba' : ''}">
+      <div class="fit-top">
+        <div><div class="fit-nom">${escapeHtml(l.nombre || 'Sin nombre')}${l.es_prueba ? ' · prueba' : ''}</div>
+        <div class="fit-tel">${escapeHtml(l.telefono || '')} · ${invHace(l.ultima_actividad)}</div></div>
+        <span class="fit-badge">${escapeHtml(ESTADOS_TEXTO[l.estado] || l.estado || '')}</span>
+      </div>
+      <div class="fit-datos">${datos.join(' · ')}</div>
+      ${l.ultimo_mensaje ? `<div class="fit-ultimo"><span class="q">${quien}</span>${escapeHtml(l.ultimo_mensaje)}</div>` : ''}
+      <select class="inv-estado-sel" data-autoestado="${l.id}">${ESTADOS_PIPELINE.map(k => `<option value="${k}" ${l.estado === k ? 'selected' : ''}>${ESTADOS_TEXTO[k]}</option>`).join('')}</select>
+      <div class="fit-acciones">
+        <button type="button" data-autochat="${l.id}">💬 Conversación</button>
+        <a class="wa" href="${waJorge(l)}" target="_blank" rel="noopener">📲 Escribirle (2496)</a>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('negAuto').addEventListener('click', () => {
+    document.getElementById('negocioScreen').classList.remove('show');
+    document.getElementById('autoScreen').classList.add('show');
+    window.scrollTo(0, 0);
+    autoCargar();
+  });
+  document.getElementById('autoTabClientes').addEventListener('click', () => { autoTab = 'clientes'; autoFiltro = 'todos'; document.getElementById('autoTabClientes').classList.add('sel'); document.getElementById('autoTabLeads').classList.remove('sel'); autoPintar(); });
+  document.getElementById('autoTabLeads').addEventListener('click', () => { autoTab = 'leads'; autoFiltro = 'todos'; document.getElementById('autoTabLeads').classList.add('sel'); document.getElementById('autoTabClientes').classList.remove('sel'); autoPintar(); });
+  document.getElementById('autoResumen').addEventListener('click', e => { const b = e.target.closest('[data-ag]'); if (!b) return; autoFiltro = b.dataset.ag; autoPintar(); });
+  document.getElementById('autoBuscador').addEventListener('input', autoPintar);
+  document.getElementById('autoVerPruebas').addEventListener('change', autoPintar);
+  document.getElementById('autoLista').addEventListener('click', e => {
+    const b = e.target.closest('[data-autochat]'); if (!b) return;
+    const l = (autoDatos.leads || []).find(x => x.id === b.dataset.autochat); if (l) abrirConversacion(l);
+  });
+  document.getElementById('autoLista').addEventListener('change', async e => {
+    const s = e.target.closest('[data-autoestado]'); if (!s) return;
+    const l = (autoDatos.leads || []).find(x => x.id === s.dataset.autoestado); if (!l) return;
+    const nuevo = s.value; if (!ESTADOS_PIPELINE.includes(nuevo)) return;
+    const patch = { estado: nuevo };
+    if (['cerrado', 'no_interesado', 'perdido'].includes(nuevo)) patch.seguimiento_pausado = true;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/leads_whatsapp?id=eq.${l.id}`, { method: 'PATCH', headers: { ...(await authHeaders()), 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify(patch) });
+      if (!res.ok) throw new Error(await res.text());
+      Object.assign(l, patch); autoPintar();
+    } catch (err) { console.error(err); s.value = l.estado; alert('No se pudo cambiar el estado.'); }
+  });
+  window.autoContarNuevos = autoContarNuevos;
+  sb.auth.getSession().then(({ data }) => { if (data && data.session) autoContarNuevos(); });
 </script>
 
 </body>
