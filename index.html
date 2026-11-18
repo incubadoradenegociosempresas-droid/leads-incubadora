@@ -924,6 +924,15 @@
   .neg-btn.auto .neg-num { background: rgba(245,184,61,0.15); color: #F5B83D; }
   .auto-kpi { background: rgba(245,184,61,0.08) !important; border-color: rgba(245,184,61,0.3) !important; }
   .auto-kpi .v { color: #F5B83D !important; }
+  .auto-embudo { background: rgba(245,184,61,0.06); border: 1px solid rgba(245,184,61,0.25); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+  .auto-embudo-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+  .auto-embudo-top select { background: transparent; color: inherit; border: 1px solid rgba(245,184,61,0.35); border-radius: 6px; padding: 3px 6px; font-size: 12px; max-width: 60%; }
+  .auto-embudo-top option { color: #000; }
+  .emb-row { display: grid; grid-template-columns: 130px 1fr 74px; align-items: center; gap: 8px; font-size: 12px; margin: 3px 0; }
+  .emb-bar { height: 10px; background: rgba(255,255,255,0.06); border-radius: 5px; overflow: hidden; }
+  .emb-bar i { display: block; height: 100%; background: #F5B83D; border-radius: 5px; }
+  .emb-n { text-align: right; color: var(--text-dim); white-space: nowrap; }
+  .emb-n b { color: #F5B83D; }
   #autoScreen .inv-tabs button.sel { border-color: #F5B83D; box-shadow: 0 0 0 1px #F5B83D inset; color: #F5B83D; }
   .auto-pasos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 10px; }
   .auto-pasos div { background: #14171C; border-radius: 8px; padding: 6px 2px; text-align: center; font-size: 10px; color: var(--text-dim); line-height: 1.25; }
@@ -1091,6 +1100,16 @@
     <h1>Clientes y leads</h1>
   </header>
   <div class="fit-kpis" id="autoKpis"></div>
+  <div class="auto-embudo">
+    <div class="auto-embudo-top"><b>Embudo de venta</b>
+      <select id="autoEmbudoRango">
+        <option value="botones">Desde la venta con botones (17-nov)</option>
+        <option value="7d">Últimos 7 días</option>
+        <option value="30d">Últimos 30 días</option>
+      </select>
+    </div>
+    <div id="autoEmbudo" class="loading-text">Cargando...</div>
+  </div>
   <div class="inv-tabs"><button type="button" id="autoTabClientes" class="sel">⚡ Clientes</button><button type="button" id="autoTabLeads">💬 Leads</button></div>
   <div class="fit-resumen" id="autoResumen"></div>
   <input type="text" id="autoBuscador" class="buscador" placeholder="🔍 Buscar por negocio, nombre, teléfono o correo...">
@@ -3489,6 +3508,7 @@
     const lista = document.getElementById('autoLista');
     lista.innerHTML = '<div class="loading-text">Cargando...</div>';
     try {
+      autoEmbudoCargar();
       autoDatos = await fitRpc('auto_admin_crm') || { leads: [], clientes: [] };
       // 16-nov (Jorge): si aún no hay clientes reales, abrir directo en Leads
       if (!autoPrimeraCarga) { autoPrimeraCarga = true; if (!(autoDatos.clientes || []).some(c => !c.es_demo)) autoElegirTab('leads'); }
@@ -3608,7 +3628,24 @@
   document.addEventListener('visibilitychange', () => { if (autoVisible()) autoCargarSilencioso(); });
   async function autoCargarSilencioso() {
     try { const d = await fitRpc('auto_admin_crm'); if (d) { autoDatos = d; autoPintar(); } } catch (e) { /* se reintenta en el siguiente minuto */ }
+    autoEmbudoCargar();
   }
+  // 17-nov-2026 (Jorge): embudo por paso (RPC auto_embudo): cuántos escribieron, vieron precio, panel, pidieron liga o demo, en prueba y pagaron.
+  async function autoEmbudoCargar() {
+    const caja = document.getElementById('autoEmbudo');
+    const rango = document.getElementById('autoEmbudoRango').value;
+    const args = rango === '7d' ? { p_desde: new Date(Date.now() - 7 * 864e5).toISOString() }
+      : rango === '30d' ? { p_desde: new Date(Date.now() - 30 * 864e5).toISOString() } : {};
+    try {
+      const d = await fitRpc('auto_embudo', args);
+      const pasos = (d && d.pasos) || [];
+      const tope = Math.max(1, ...pasos.map(p => p.n || 0));
+      const total = pasos.length ? (pasos[0].n || 0) : 0;
+      caja.className = '';
+      caja.innerHTML = pasos.map(p => `<div class="emb-row"><span>${p.paso}</span><div class="emb-bar"><i style="width:${Math.round((p.n || 0) * 100 / tope)}%"></i></div><span class="emb-n"><b>${p.n || 0}</b> · ${total ? Math.round((p.n || 0) * 100 / total) : 0}%</span></div>`).join('');
+    } catch (e) { caja.className = 'loading-text'; caja.textContent = 'No se pudo cargar el embudo.'; }
+  }
+  document.getElementById('autoEmbudoRango').addEventListener('change', autoEmbudoCargar);
   document.getElementById('autoTabClientes').addEventListener('click', () => { autoElegirTab('clientes'); autoPintar(); });
   document.getElementById('autoTabLeads').addEventListener('click', () => { autoElegirTab('leads'); autoPintar(); });
   document.getElementById('autoResumen').addEventListener('click', e => { const b = e.target.closest('[data-ag]'); if (!b) return; autoFiltro = b.dataset.ag; autoPintar(); });
