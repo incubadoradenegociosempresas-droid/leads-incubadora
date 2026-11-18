@@ -924,6 +924,7 @@
   .neg-btn.auto .neg-num { background: rgba(245,184,61,0.15); color: #F5B83D; }
   .auto-kpi { background: rgba(245,184,61,0.08) !important; border-color: rgba(245,184,61,0.3) !important; }
   .auto-kpi .v { color: #F5B83D !important; }
+  .auto-kpi-sub { font-size: 12px; color: #9AA3B2; margin-top: 4px; }
   .auto-embudo { background: rgba(245,184,61,0.06); border: 1px solid rgba(245,184,61,0.25); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
   .auto-embudo-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
   .auto-embudo-top select { background: transparent; color: inherit; border: 1px solid rgba(245,184,61,0.35); border-radius: 6px; padding: 3px 6px; font-size: 12px; max-width: 60%; }
@@ -3535,7 +3536,7 @@
     const leadsReales = (autoDatos.leads || []).filter(l => !l.es_prueba);
     const conv = leadsReales.length ? Math.round(reales.length * 100 / leadsReales.length) : 0;
     document.getElementById('autoKpis').innerHTML = `
-      <div class="fit-kpi auto-kpi"><div class="k">Ingreso mensual (MRR)</div><div class="v">${autoDinero(autoDatos.mrr)}</div></div>
+      <div class="fit-kpi auto-kpi"><div class="k">Ingreso mensual real</div><div class="v">${autoDinero(autoDatos.mrr)}</div>${Number(autoDatos.mrr_proximo || 0) !== Number(autoDatos.mrr || 0) ? `<div class="auto-kpi-sub">Al renovar: ${autoDinero(autoDatos.mrr_proximo)}/mes</div>` : ''}</div>
       <div class="fit-kpi auto-kpi"><div class="k">Activos · en alta</div><div class="v">${activos} · ${enAlta}</div></div>
       <div class="fit-kpi auto-kpi"><div class="k">Cobrado este mes</div><div class="v">${autoDinero(autoDatos.cobrado_mes)}</div></div>
       <div class="fit-kpi auto-kpi"><div class="k">Clientes / leads</div><div class="v">${reales.length} / ${leadsReales.length} · ${conv}%</div></div>`;
@@ -3630,6 +3631,7 @@
     try { const d = await fitRpc('auto_admin_crm'); if (d) { autoDatos = d; autoPintar(); } } catch (e) { /* se reintenta en el siguiente minuto */ }
     autoEmbudoCargar();
   }
+  // 18-nov-2026 (Jorge): el MRR es lo que de verdad se cobra (el $149 del primer mes), y abajo lo que se cobrará al renovar.
   // 17-nov-2026 (Jorge): embudo por paso (RPC auto_embudo): cuántos escribieron, vieron precio, panel, pidieron liga o demo, en prueba y pagaron.
   async function autoEmbudoCargar() {
     const caja = document.getElementById('autoEmbudo');
