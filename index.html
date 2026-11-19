@@ -3453,14 +3453,21 @@
      Leads = pláticas de Karina del anuncio del autoservicio, que lo pidieron o que recibieron su liga. */
   const AUTO_GRUPOS_CLIENTES = [['todos', 'Todos'], ['atender', 'Necesitan ayuda'], ['alta', 'En alta'], ['activos', 'Activos'], ['baja', 'Suspendidos / cancelados']];
   // 18-nov-2026 (Jorge): pipeline con botones, igual que el CRM principal (nuevos, tibios, calientes, fríos...).
-  const AUTO_GRUPOS_LEADS = [['todos', 'Todos'], ['hoy', 'Escribieron hoy'], ['caliente', '🔥 Calientes'], ['hablar', '🔔 Pidió hablar'], ['tibio', '🌤 Tibios'],
+  // 19-nov-2026 (Jorge): "Calientes" = abrieron la página de pago (lo registra la función activar del botón "Activar por $149").
+  // Quien solo tocó "Lo quiero" y recibió la liga sin abrirla va en "Recibieron liga".
+  const AUTO_GRUPOS_LEADS = [['todos', 'Todos'], ['hoy', 'Escribieron hoy'], ['caliente', '🔥 Abrieron la liga'], ['liga', '📩 Recibieron liga'], ['hablar', '🔔 Pidió hablar'], ['tibio', '🌤 Tibios'],
     ['nuevo', '🆕 Nuevos'], ['frio', '❄️ Fríos'], ['nointeresa', '🚫 No interesa'], ['cliente', '✅ Clientes']];
   // Categoría del lead del autoservicio: la misma regla del CRM principal (categoriaReal); si ya tiene su negocio dado de alta, es cliente.
   function autoCategoria(l) {
     if (l.tenant_id || l.pago_confirmado) return 'cliente';
-    if (l.recibio_liga && !['no_interesado', 'perdido', 'escalado'].includes(l.estado)) return 'caliente';
-    return categoriaReal(l);
+    if ((l.recibio_liga || l.abrio_liga_at) && !['no_interesado', 'perdido', 'escalado'].includes(l.estado)) return l.abrio_liga_at ? 'caliente' : 'liga';
+    const c = categoriaReal(l);
+    return c === 'caliente' ? 'tibio' : c;
   }
+  const AUTO_CAT_EXTRA = {
+    caliente: { id: 'caliente', clase: 'est-caliente', corto: '🔥 Abrió la liga' },
+    liga: { id: 'liga', clase: 'est-tibio', corto: '📩 Recibió liga' }
+  };
   const AUTO_ESTADO = { pendiente_conexion: 'Falta conectar', pendiente_entrenamiento: 'Falta encender', activo: 'Activo', suspendido: 'Suspendido', cancelado: 'Cancelado' };
   let autoDatos = { leads: [], clientes: [] };
   let autoTab = 'clientes';
@@ -3604,10 +3611,12 @@
 
   function autoTarjetaLead(l) {
     const quien = l.ultimo_rol === 'user' ? '👤 Cliente' : '🤖 Karina';
-    const cat = ESTATUS_CATS.find(c => c.id === autoCategoria(l));
+    const catId = autoCategoria(l);
+    const cat = AUTO_CAT_EXTRA[catId] || ESTATUS_CATS.find(c => c.id === catId);
     const datos = [`<b>${l.mensajes_cliente || 0}</b> mensajes del cliente`];
     if (l.tenant_id) datos.unshift('✅ <b>Ya es cliente</b>');
-    else if (l.recibio_liga) datos.unshift('🔗 Recibió la liga de pago');
+    else if (l.abrio_liga_at) datos.unshift(`💳 <b>Abrió la página de pago</b> ${invHace(l.abrio_liga_at)}${Number(l.liga_clics) > 1 ? ' (' + l.liga_clics + ' veces)' : ''}`);
+    else if (l.recibio_liga) datos.unshift('🔗 Recibió la liga (no la ha abierto)');
     if (l.anuncio_titulo) datos.push(`Anuncio: ${escapeHtml(l.anuncio_titulo)}`);
     return `<div class="fit-lead ${l.es_prueba ? 'prueba' : ''}">
       <div class="fit-top">
