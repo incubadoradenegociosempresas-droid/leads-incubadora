@@ -33,13 +33,14 @@
   @media (hover:hover){.ib:hover,.btn:hover{border-color:#3a4050}}
   /* Tarjetas de resumen */
   h2{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin:22px 2px 10px;font-weight:700}
-  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-  @media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}}
-  .k{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 13px;min-width:0}
+  .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  @media(min-width:760px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  .k{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 13px;min-width:0;overflow:hidden}
   .k .l{color:var(--dim);font-size:12px}
   .k .v{font-size:22px;font-weight:750;letter-spacing:-.01em;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .k .s{color:var(--dim);font-size:12px;margin-top:2px}
   .k.wide{grid-column:span 2}
+  @media(min-width:760px){.k.wide{grid-column:span 4}}
   .bar{height:8px;border-radius:5px;background:var(--card2);overflow:hidden;margin-top:8px;position:relative}
   .bar i{display:block;height:100%;background:var(--ok);border-radius:5px}
   .bar i.w{background:var(--warn)} .bar i.b{background:var(--bad)}
@@ -53,8 +54,8 @@
   .search{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:10px;outline:none}
   .search:focus{border-color:var(--accent)}
   /* Lista de clientes */
-  .list{display:grid;gap:10px;margin-top:12px}
-  @media(min-width:760px){.list{grid-template-columns:repeat(2,1fr)}}
+  .list{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:12px}
+  @media(min-width:760px){.list{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .cli{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px;cursor:pointer;display:flex;gap:11px;align-items:flex-start;text-align:left;width:100%}
   .cli:active{transform:scale(.995)}
   .dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:5px;background:var(--gray);box-shadow:0 0 0 3px rgba(107,112,128,.18)}
@@ -62,7 +63,7 @@
   .dot.ambar{background:var(--warn);box-shadow:0 0 0 3px rgba(245,185,66,.2)}
   .dot.rojo{background:var(--bad);box-shadow:0 0 0 3px rgba(255,92,92,.22)}
   .cli .b{flex:1;min-width:0}
-  .cli .t{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
+  .cli .t{display:flex;gap:8px;align-items:baseline;justify-content:space-between;min-width:0}
   .cli .t b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cli .t span{flex:none;font-weight:700}
   .meta{color:var(--dim);font-size:13px;margin-top:2px}
@@ -87,8 +88,8 @@
   .sheet .bd .in{max-width:1180px;margin:0 auto;padding:14px 14px calc(40px + var(--safe-b))}
   .box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:12px}
   .box h3{margin:0 0 8px;font-size:14px;color:var(--dim);font-weight:700}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media(min-width:760px){.grid2.c4{grid-template-columns:repeat(4,1fr)}}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  @media(min-width:760px){.grid2.c4{grid-template-columns:repeat(4,minmax(0,1fr))}}
   .kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px}
   .kv:last-child{border-bottom:0} .kv span:first-child{color:var(--dim)} .kv span:last-child{text-align:right}
   .reason{display:flex;gap:8px;align-items:flex-start;padding:7px 0;font-size:14px}
@@ -364,7 +365,7 @@
           <div class="meta">${c.tipo === 'autoservicio' ? 'Autoservicio · ' + esc(u0.plan) : 'A la medida'}${us.length > 1 ? ' · ' + us.length + ' números' : ''} · ${cobro}</div>
           ${why ? `<div class="why ${c.salud}">${esc(why)}</div>` : ''}
           <div class="tags"><span class="tag">${ent(in7)} mensajes en 7 días</span>
-            <span class="tag ${num(c.margen_mes) >= 0 ? 'g' : 'r'}">Utilidad ${mxn(c.margen_mes)}</span>${riesgo}${extra}</div>
+            ${c.salud === 'gris' ? '<span class="tag">Sin ingreso mientras esté suspendido</span>' : `<span class="tag ${num(c.margen_mes) >= 0 ? 'g' : 'r'}">Utilidad ${mxn(c.margen_mes)}</span>`}${riesgo}${extra}</div>
         </div></button>`;
     }).join('');
     $('lista').querySelectorAll('.cli').forEach(b => b.onclick = () => abrir(b.dataset.k));
@@ -429,7 +430,7 @@
     return `
       <div class="grid2 c4">
         <div class="k"><div class="l">Paga</div><div class="v">${mxn(cli.cuota)}</div><div class="s">${cli.tipo === 'autoservicio' ? 'Stripe' : esc(us[0].forma_pago || 'transferencia')}</div></div>
-        <div class="k"><div class="l">Utilidad del mes</div><div class="v ${num(cli.margen_mes) >= 0 ? 'pos' : 'neg'}">${mxn(cli.margen_mes)}</div><div class="s">Costos ${mxn(cli.costo_mes)}</div></div>
+        <div class="k"><div class="l">Utilidad del mes</div>${cli.salud === 'gris' ? '<div class="v">—</div><div class="s">Sin ingreso mientras esté suspendido</div>' : `<div class="v ${num(cli.margen_mes) >= 0 ? 'pos' : 'neg'}">${mxn(cli.margen_mes)}</div><div class="s">Costos ${mxn(cli.costo_mes)}</div>`}</div>
         <div class="k"><div class="l">Mensajes 7 días</div><div class="v">${ent(us.reduce((a, u) => a + num(u.uso.in_7d), 0))}</div><div class="s">semana anterior ${ent(us.reduce((a, u) => a + num(u.uso.in_prev7d), 0))}</div></div>
         <div class="k"><div class="l">Riesgo de irse</div><div class="v ${riesgo >= 60 ? 'neg' : riesgo >= 30 ? 'wr' : 'pos'}">${riesgo >= 60 ? 'Alto' : riesgo >= 30 ? 'Medio' : 'Bajo'}</div><div class="s">${riesgo} de 100</div></div>
       </div>
