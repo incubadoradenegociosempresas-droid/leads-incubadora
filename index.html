@@ -3452,7 +3452,15 @@
      Clientes = negocios de autoservicio (saas_tenants) con su alta, cobro, uso y actividad.
      Leads = pláticas de Karina del anuncio del autoservicio, que lo pidieron o que recibieron su liga. */
   const AUTO_GRUPOS_CLIENTES = [['todos', 'Todos'], ['atender', 'Necesitan ayuda'], ['alta', 'En alta'], ['activos', 'Activos'], ['baja', 'Suspendidos / cancelados']];
-  const AUTO_GRUPOS_LEADS = [['todos', 'Todos'], ['hoy', 'Escribieron hoy'], ['liga', 'Recibieron la liga'], ['clientes', 'Ya son clientes']];
+  // 18-nov-2026 (Jorge): pipeline con botones, igual que el CRM principal (nuevos, tibios, calientes, fríos...).
+  const AUTO_GRUPOS_LEADS = [['todos', 'Todos'], ['hoy', 'Escribieron hoy'], ['caliente', '🔥 Calientes'], ['hablar', '🔔 Pidió hablar'], ['tibio', '🌤 Tibios'],
+    ['nuevo', '🆕 Nuevos'], ['frio', '❄️ Fríos'], ['nointeresa', '🚫 No interesa'], ['cliente', '✅ Clientes']];
+  // Categoría del lead del autoservicio: la misma regla del CRM principal (categoriaReal); si ya tiene su negocio dado de alta, es cliente.
+  function autoCategoria(l) {
+    if (l.tenant_id || l.pago_confirmado) return 'cliente';
+    if (l.recibio_liga && !['no_interesado', 'perdido', 'escalado'].includes(l.estado)) return 'caliente';
+    return categoriaReal(l);
+  }
   const AUTO_ESTADO = { pendiente_conexion: 'Falta conectar', pendiente_entrenamiento: 'Falta encender', activo: 'Activo', suspendido: 'Suspendido', cancelado: 'Cancelado' };
   let autoDatos = { leads: [], clientes: [] };
   let autoTab = 'clientes';
@@ -3499,8 +3507,7 @@
       if (g === 'baja') return ['suspendido', 'cancelado'].includes(x.estado_alta);
     } else {
       if (g === 'hoy') return invEsHoy(x.fecha_ultima_respuesta_cliente);
-      if (g === 'liga') return !!x.recibio_liga;
-      if (g === 'clientes') return !!x.tenant_id;
+      return autoCategoria(x) === g;
     }
     return true;
   }
@@ -3597,6 +3604,7 @@
 
   function autoTarjetaLead(l) {
     const quien = l.ultimo_rol === 'user' ? '👤 Cliente' : '🤖 Karina';
+    const cat = ESTATUS_CATS.find(c => c.id === autoCategoria(l));
     const datos = [`<b>${l.mensajes_cliente || 0}</b> mensajes del cliente`];
     if (l.tenant_id) datos.unshift('✅ <b>Ya es cliente</b>');
     else if (l.recibio_liga) datos.unshift('🔗 Recibió la liga de pago');
@@ -3607,6 +3615,7 @@
         <div class="fit-tel">${escapeHtml(l.telefono || '')} · ${invHace(l.ultima_actividad)}</div></div>
         <span class="fit-badge">${escapeHtml(ESTADOS_TEXTO[l.estado] || l.estado || '')}</span>
       </div>
+      ${cat ? `<div class="est-chip ${cat.clase}" style="display:inline-block;margin:6px 0 2px;padding:3px 10px;font-size:12px">${escapeHtml(cat.corto)}</div>` : ''}
       <div class="fit-datos">${datos.join(' · ')}</div>
       ${l.ultimo_mensaje ? `<div class="fit-ultimo"><span class="q">${quien}</span>${escapeHtml(l.ultimo_mensaje)}</div>` : ''}
       <select class="inv-estado-sel" data-autoestado="${l.id}">${ESTADOS_PIPELINE.map(k => `<option value="${k}" ${l.estado === k ? 'selected' : ''}>${ESTADOS_TEXTO[k]}</option>`).join('')}</select>
