@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F1115">
+<meta name="robots" content="noindex, nofollow">
+<title>Panel maestro — Incubadora</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --bg:#0F1115;--card:#171A21;--card2:#1E222B;--border:#2A2E38;--text:#ECEDEF;--dim:#8A8F9C;--dim2:#5E6370;
+    --accent:#FF7A30;--accent-dim:#3A2A20;--ok:#3DDC97;--ok-dim:#163428;--warn:#F5B942;--warn-dim:#3A3018;
+    --bad:#FF5C5C;--bad-dim:#3D1E21;--gray:#6B7080;--r:12px;
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+  button,input,select,textarea{font:inherit;color:inherit}
+  input,select,textarea{font-size:16px}
+  a{color:var(--accent)}
+  .hide{display:none!important}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 14px calc(60px + var(--safe-b))}
+  /* Barra superior */
+  .top{position:sticky;top:0;z-index:20;background:rgba(15,17,21,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .top .in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top))}
+  .brand{flex:1;min-width:0}
+  .brand small{display:block;color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .brand b{font-size:17px}
+  .ib{position:relative;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--card);display:grid;place-items:center;cursor:pointer;font-size:18px}
+  .ib .n{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+  .ib .n.w{background:var(--warn);color:#111}
+  @media (hover:hover){.ib:hover,.btn:hover{border-color:#3a4050}}
+  /* Tarjetas de resumen */
+  h2{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin:22px 2px 10px;font-weight:700}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}}
+  .k{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 13px;min-width:0}
+  .k .l{color:var(--dim);font-size:12px}
+  .k .v{font-size:22px;font-weight:750;letter-spacing:-.01em;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .k .s{color:var(--dim);font-size:12px;margin-top:2px}
+  .k.wide{grid-column:span 2}
+  .bar{height:8px;border-radius:5px;background:var(--card2);overflow:hidden;margin-top:8px;position:relative}
+  .bar i{display:block;height:100%;background:var(--ok);border-radius:5px}
+  .bar i.w{background:var(--warn)} .bar i.b{background:var(--bad)}
+  .bar .mk{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text);opacity:.5}
+  .pos{color:var(--ok)} .neg{color:var(--bad)} .wr{color:var(--warn)}
+  /* Filtros */
+  .fil{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+  .fil::-webkit-scrollbar{display:none}
+  .chip{flex:none;border:1px solid var(--border);background:var(--card);border-radius:20px;padding:7px 13px;font-size:14px;cursor:pointer;white-space:nowrap}
+  .chip.on{border-color:var(--accent);background:var(--accent-dim);color:#fff}
+  .search{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:10px;outline:none}
+  .search:focus{border-color:var(--accent)}
+  /* Lista de clientes */
+  .list{display:grid;gap:10px;margin-top:12px}
+  @media(min-width:760px){.list{grid-template-columns:repeat(2,1fr)}}
+  .cli{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px;cursor:pointer;display:flex;gap:11px;align-items:flex-start;text-align:left;width:100%}
+  .cli:active{transform:scale(.995)}
+  .dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:5px;background:var(--gray);box-shadow:0 0 0 3px rgba(107,112,128,.18)}
+  .dot.verde{background:var(--ok);box-shadow:0 0 0 3px rgba(61,220,151,.18)}
+  .dot.ambar{background:var(--warn);box-shadow:0 0 0 3px rgba(245,185,66,.2)}
+  .dot.rojo{background:var(--bad);box-shadow:0 0 0 3px rgba(255,92,92,.22)}
+  .cli .b{flex:1;min-width:0}
+  .cli .t{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
+  .cli .t b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cli .t span{flex:none;font-weight:700}
+  .meta{color:var(--dim);font-size:13px;margin-top:2px}
+  .why{font-size:13px;margin-top:7px;padding:6px 9px;border-radius:8px;background:var(--card2)}
+  .why.rojo{background:var(--bad-dim);color:#FFC2C2} .why.ambar{background:var(--warn-dim);color:#FFE3A6}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .tag{font-size:12px;padding:3px 8px;border-radius:6px;background:var(--card2);color:var(--dim)}
+  .tag.r{background:var(--bad-dim);color:#FFB3B3} .tag.a{background:var(--warn-dim);color:#FFDD99} .tag.g{background:var(--ok-dim);color:#9FF0C9}
+  .empty{color:var(--dim);text-align:center;padding:30px 10px}
+  /* Hoja de detalle */
+  .sheet{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column}
+  .sheet .hd{border-bottom:1px solid var(--border);background:var(--bg)}
+  .sheet .hd .in{max-width:1180px;margin:0 auto;padding:10px 14px 0;padding-top:max(10px,env(safe-area-inset-top))}
+  .sheet .row1{display:flex;gap:10px;align-items:center}
+  .sheet .row1 .tt{flex:1;min-width:0}
+  .sheet .row1 .tt b{display:block;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tabs{display:flex;gap:4px;overflow-x:auto;margin-top:8px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:none;padding:10px 12px;border:0;background:none;color:var(--dim);border-bottom:2px solid transparent;cursor:pointer;font-weight:600;font-size:14px}
+  .tab.on{color:var(--text);border-color:var(--accent)}
+  .sheet .bd{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .sheet .bd .in{max-width:1180px;margin:0 auto;padding:14px 14px calc(40px + var(--safe-b))}
+  .box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:12px}
+  .box h3{margin:0 0 8px;font-size:14px;color:var(--dim);font-weight:700}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(min-width:760px){.grid2.c4{grid-template-columns:repeat(4,1fr)}}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px}
+  .kv:last-child{border-bottom:0} .kv span:first-child{color:var(--dim)} .kv span:last-child{text-align:right}
+  .reason{display:flex;gap:8px;align-items:flex-start;padding:7px 0;font-size:14px}
+  .reason .dot{margin-top:4px;width:9px;height:9px}
+  .unit{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:8px}
+  .unit .t{display:flex;gap:8px;align-items:center}
+  .unit .t b{flex:1}
+  .steps{display:grid;gap:8px}
+  .step{display:flex;gap:10px;align-items:center;font-size:14px}
+  .step i{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;background:var(--card2);color:var(--dim);border:1px solid var(--border)}
+  .step.ok i{background:var(--ok-dim);color:var(--ok);border-color:transparent}
+  .item{padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  .item:last-child{border-bottom:0}
+  .item .t{display:flex;justify-content:space-between;gap:10px}
+  .item .t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .t small{flex:none;color:var(--dim)}
+  .item p{margin:3px 0 0;color:var(--dim);font-size:13px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .btn{border:1px solid var(--border);background:var(--card2);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;font-size:14px;min-height:42px}
+  .btn.pri{background:var(--accent);border-color:var(--accent);color:#111}
+  .btn.danger{background:var(--bad-dim);border-color:#5a2a2e;color:#FFC2C2}
+  .btn.okb{background:var(--ok-dim);border-color:#235a43;color:#9FF0C9}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btns{display:flex;gap:8px;flex-wrap:wrap}
+  .ctl{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+  .ctl:last-child{border-bottom:0}
+  .ctl .x{flex:1;min-width:0} .ctl .x b{display:block;font-size:15px} .ctl .x small{color:var(--dim)}
+  .sw{position:relative;width:50px;height:30px;flex:none}
+  .sw input{opacity:0;width:0;height:0}
+  .sw span{position:absolute;inset:0;border-radius:20px;background:#3a3f4b;transition:.2s;cursor:pointer}
+  .sw span:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s}
+  .sw input:checked+span{background:var(--ok)}
+  .sw input:checked+span:before{transform:translateX(20px)}
+  .sw input:disabled+span{opacity:.45}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{padding:8px 6px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:12px}
+  td.n,th.n{text-align:right;white-space:nowrap}
+  .scroll-x{overflow-x:auto}
+  /* Modales */
+  .modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+  @media(min-width:760px){.modal{align-items:center}}
+  .modal .mc{background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column}
+  @media(min-width:760px){.modal .mc{border-radius:16px}}
+  .modal .mh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .modal .mh b{flex:1;font-size:16px}
+  .modal .mb{padding:14px 16px calc(16px + var(--safe-b));overflow-y:auto;-webkit-overflow-scrolling:touch}
+  label.f{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
+  .inp{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;outline:none}
+  .inp:focus{border-color:var(--accent)}
+  textarea.inp{min-height:90px;resize:vertical}
+  .chk{display:flex;gap:10px;align-items:center;margin-top:12px;font-size:14px}
+  .chk input{width:20px;height:20px;accent-color:var(--accent)}
+  .msg{margin-top:10px;font-size:14px;padding:9px 11px;border-radius:9px}
+  .msg.err{background:var(--bad-dim);color:#FFC2C2} .msg.ok{background:var(--ok-dim);color:#9FF0C9}
+  /* Chat */
+  .chat{display:flex;flex-direction:column;gap:6px}
+  .bub{max-width:86%;padding:8px 11px;border-radius:12px;font-size:14px;white-space:pre-wrap;word-wrap:break-word}
+  .bub.u{align-self:flex-start;background:var(--card2);border-bottom-left-radius:4px}
+  .bub.a{align-self:flex-end;background:#2B3A33;border-bottom-right-radius:4px}
+  .bub small{display:block;color:var(--dim);font-size:11px;margin-top:3px}
+  .day{align-self:center;color:var(--dim);font-size:12px;margin:8px 0}
+  /* Avisos */
+  .al{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  .al:last-child{border-bottom:0}
+  .al .dot{margin-top:5px}
+  .al b{display:block;font-size:14px} .al span{font-size:14px}
+  /* Gráfica mini */
+  .spark{display:flex;align-items:flex-end;gap:2px;height:54px;margin-top:8px}
+  .spark i{flex:1;background:var(--accent);opacity:.85;border-radius:2px 2px 0 0;min-height:2px}
+  .spark i.z{background:var(--border)}
+  /* Acceso */
+  .login{max-width:380px;margin:12vh auto 0;padding:0 16px}
+  .toast{position:fixed;left:50%;bottom:calc(20px + var(--safe-b));transform:translateX(-50%);background:#22262F;border:1px solid var(--border);padding:10px 16px;border-radius:10px;z-index:90;font-size:14px;max-width:92vw}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--dim2);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-3px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .note{font-size:13px;color:var(--dim);margin-top:6px}
+</style>
+</head>
+<body>
+
+<!-- Acceso -->
+<div id="vLogin" class="login hide">
+  <div style="color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Incubadora</div>
+  <h1 style="margin:4px 0 18px;font-size:24px">Panel maestro</h1>
+  <form id="fLogin" class="box">
+    <label class="f" for="lEmail">Correo</label>
+    <input class="inp" id="lEmail" type="email" autocomplete="username" required>
+    <label class="f" for="lPass">Contraseña</label>
+    <input class="inp" id="lPass" type="password" autocomplete="current-password" required>
+    <button class="btn pri" style="width:100%;margin-top:14px" type="submit">Entrar</button>
+    <div id="lMsg"></div>
+  </form>
+</div>
+
+<!-- Panel -->
+<div id="vApp" class="hide">
+  <div class="top"><div class="in">
+    <div class="brand"><small>Incubadora</small><b>Panel maestro</b></div>
+    <button class="ib" id="bAvisos" title="Avisos" aria-label="Avisos">🔔<span class="n hide" id="nAvisos"></span></button>
+    <button class="ib" id="bRefrescar" title="Actualizar" aria-label="Actualizar">↻</button>
+    <button class="ib" id="bAjustes" title="Ajustes" aria-label="Ajustes">⚙︎</button>
+  </div></div>
+
+  <div class="wrap">
+    <h2>Resumen</h2>
+    <div class="kpis" id="kpis"><div class="k wide"><span class="spin"></span> Cargando…</div></div>
+
+    <h2>Clientes</h2>
+    <div class="fil" id="filtros"></div>
+    <input class="search" id="buscar" type="search" placeholder="Buscar cliente…" autocomplete="off">
+    <div class="list" id="lista"></div>
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <label class="chk" style="margin:0"><input type="checkbox" id="verOcultos"> Mostrar demos y pruebas</label>
+      <small class="note" id="actualizado"></small>
+    </div>
+  </div>
+</div>
+
+<!-- Detalle de cliente -->
+<div id="sheet" class="sheet hide" role="dialog" aria-modal="true">
+  <div class="hd"><div class="in">
+    <div class="row1">
+      <button class="ib" id="sCerrar" aria-label="Regresar">←</button>
+      <span class="dot" id="sDot"></span>
+      <div class="tt"><b id="sNombre"></b><small class="meta" id="sSub"></small></div>
+    </div>
+    <div class="tabs" id="sTabs"></div>
+  </div></div>
+  <div class="bd" id="sBody"><div class="in" id="sIn"></div></div>
+</div>
+
+<div id="modal" class="modal hide"><div class="mc">
+  <div class="mh"><b id="mTit"></b><button class="ib" id="mCerrar" aria-label="Cerrar">✕</button></div>
+  <div class="mb" id="mBody"></div>
+</div></div>
+
+<script>
+(function(){
+  const SB_URL = 'https://ytxnmscxyjttqftmznqj.supabase.co';
+  const SB_KEY = 'sb_publishable_T3LJo-8teMIkimAtHitGWA_XKjzDBP5';
+  const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num = v => Number(v || 0);
+  const mxn = v => '$' + num(v).toLocaleString('es-MX', { maximumFractionDigits: num(v) % 1 && Math.abs(num(v)) < 1000 ? 2 : 0 });
+  const ent = v => num(v).toLocaleString('es-MX');
+  const TZ = 'America/Mexico_City';
+  const fecha = d => d ? new Date(String(d).length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', timeZone: TZ }) : '—';
+  const fechaHora = d => d ? new Date(d).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: TZ }) : '—';
+  const hace = d => { if (!d) return 'nunca'; const m = (Date.now() - new Date(d)) / 60000; if (m < 60) return 'hace ' + Math.max(1, Math.round(m)) + ' min'; if (m < 1440) return 'hace ' + Math.round(m / 60) + ' h'; return 'hace ' + Math.round(m / 1440) + ' d'; };
+  const hoyMX = () => new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+  const ESTADOS = { activo: 'Activo', pausado: 'Agente pausado', suspendido: 'Suspendido', cancelado: 'Canceló', pendiente_conexion: 'Falta conectar', pendiente_entrenamiento: 'Falta entrenar', demo: 'Demo' };
+  const SALUD = { rojo: 'Atención urgente', ambar: 'Revisar', verde: 'Todo bien', gris: 'Suspendido / apagado' };
+
+  let D = null, filtro = 'todos', cli = null, det = null, tab = 'resumen', unidadSel = null, cargando = false;
+
+  function toast(t) { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 3200); }
+  async function rpc(fn, args) { const r = await sb.rpc(fn, args || {}); if (r.error) throw new Error(r.error.message); return r.data; }
+
+  // ===== Acceso =====
+  async function arrancar() {
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { vista('login'); return; }
+    try { await cargar(); vista('app'); n8nAlDia(); }
+    catch (e) {
+      if (/no autorizado/i.test(e.message)) { vista('login'); $('lMsg').innerHTML = '<div class="msg err">Esta cuenta no es de administrador.</div>'; }
+      else { vista('app'); $('kpis').innerHTML = '<div class="k wide"><div class="msg err">No pude cargar: ' + esc(e.message) + '</div></div>'; }
+    }
+  }
+  function vista(v) { $('vLogin').classList.toggle('hide', v !== 'login'); $('vApp').classList.toggle('hide', v !== 'app'); }
+  $('fLogin').addEventListener('submit', async ev => {
+    ev.preventDefault(); $('lMsg').innerHTML = '';
+    const { error } = await sb.auth.signInWithPassword({ email: $('lEmail').value.trim(), password: $('lPass').value });
+    if (error) { $('lMsg').innerHTML = '<div class="msg err">Correo o contraseña incorrectos.</div>'; return; }
+    arrancar();
+  });
+
+  // ===== Datos =====
+  async function cargar() {
+    if (cargando) return; cargando = true;
+    try {
+      D = await rpc('maestro_datos', { p_ocultos: $('verOcultos').checked });
+      pintarResumen(); pintarFiltros(); pintarLista(); pintarCampana();
+      $('actualizado').textContent = 'Actualizado ' + fechaHora(D.resumen.actualizado);
+      if (cli) { const c = D.clientes.find(x => x.key === cli.key); if (c) cli = c; }
+    } finally { cargando = false; }
+  }
+
+  // Lee n8n en vivo si la última lectura tiene más de 30 min (necesita la clave en Supabase)
+  let n8nEstado = null;
+  async function n8nAlDia(forzar) {
+    const ult = D && D.n8n && D.n8n.leido_en ? new Date(D.n8n.leido_en) : null;
+    if (!forzar && ult && Date.now() - ult < 30 * 60000) return;
+    try {
+      const { data: s } = await sb.auth.getSession();
+      const r = await fetch(SB_URL + '/functions/v1/maestro-n8n', { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + s.session.access_token } });
+      const j = await r.json();
+      n8nEstado = j;
+      if (j.ok) { await cargar(); if (forzar) toast('n8n: ' + ent(j.ejecuciones) + ' ejecuciones este periodo'); }
+      else { pintarResumen(); if (forzar) toast(j.motivo === 'sin_clave' ? 'Falta guardar la clave de n8n en Supabase' : 'n8n no respondió (' + j.motivo + ')'); }
+    } catch (e) { if (forzar) toast('No pude leer n8n'); }
+  }
+
+  function pintarResumen() {
+    const r = D.resumen, n = D.n8n, c = D.config;
+    const pct = n ? Math.min(100, Math.round(100 * n.ejecuciones / n.tope)) : 0;
+    const proyPct = n ? Math.min(100, Math.round(100 * n.proyeccion / n.tope)) : 0;
+    const n8nCls = !n ? '' : (n.proyeccion > n.tope || n.ejecuciones >= c.n8n_alerta) ? 'b' : (n.proyeccion > c.n8n_alerta ? 'w' : '');
+    const sinClave = n8nEstado && n8nEstado.motivo === 'sin_clave';
+    const margenCls = num(r.margen_mes) >= 0 ? 'pos' : 'neg';
+    $('kpis').innerHTML = `
+      <div class="k"><div class="l">Ingreso mensual (MRR)</div><div class="v">${mxn(r.mrr)}</div>
+        <div class="s">A la medida ${mxn(r.mrr_medida)} · Autoservicio ${mxn(r.mrr_autoservicio)}</div></div>
+      <div class="k"><div class="l">Cobrado este mes</div><div class="v">${mxn(r.cobrado_mes)}</div>
+        <div class="s">Stripe ${mxn(r.cobrado_mes_stripe)} · Mes pasado ${mxn(r.cobrado_mes_pasado)}</div></div>
+      <div class="k"><div class="l">Por cobrar este mes</div><div class="v ${num(r.vencido) > 0 ? 'wr' : ''}">${mxn(r.por_cobrar_mes)}</div>
+        <div class="s">${num(r.vencido) > 0 ? '<span class="neg">Vencido ' + mxn(r.vencido) + '</span>' : 'Nada vencido'}</div></div>
+      <div class="k"><div class="l">Utilidad del mes (estimada)</div><div class="v ${margenCls}">${mxn(r.margen_mes)}</div>
+        <div class="s">IA ${mxn(r.costo_ia_mes)} · Plantillas ${mxn(r.costo_plantillas_mes)} · n8n ${mxn(r.costo_n8n_mes)}</div></div>
+      <div class="k"><div class="l">Clientes activos</div><div class="v">${ent(r.clientes_activos)} <span style="font-size:14px;color:var(--dim);font-weight:500">de ${ent(r.clientes_total)}</span></div>
+        <div class="s">${ent(r.suspendidos)} suspendidos · ${ent(r.altas_mes)} altas · ${ent(r.bajas_mes)} bajas este mes</div></div>
+      <div class="k"><div class="l">Semáforo</div><div class="v" style="font-size:18px;padding-top:4px">
+        <span class="neg">● ${r.rojos}</span>&nbsp; <span class="wr">● ${r.ambar}</span>&nbsp; <span class="pos">● ${r.verdes}</span></div>
+        <div class="s">${r.riesgo_alto ? '<span class="neg">' + r.riesgo_alto + ' en riesgo alto de irse</span>' : 'Nadie en riesgo alto de irse'}</div></div>
+      <div class="k"><div class="l">Mensajes de sus clientes</div><div class="v">${ent(r.mensajes_hoy)} <span style="font-size:14px;color:var(--dim);font-weight:500">hoy</span></div>
+        <div class="s">${ent(r.mensajes_7d)} en 7 días · ${ent(r.mensajes_mes)} este mes · ${ent(r.citas_mes)} citas/pedidos</div></div>
+      <div class="k"><div class="l">Karina (tu agente)</div><div class="v">${ent(r.karina.leads_mes)} <span style="font-size:14px;color:var(--dim);font-weight:500">leads del mes</span></div>
+        <div class="s">${ent(r.karina.calientes)} calientes · ${ent(r.karina.abrieron_liga_mes)} abrieron la liga de pago</div></div>
+      <div class="k wide" id="kN8n" style="cursor:pointer"><div class="l">Ejecuciones de n8n ${n ? '· ' + (n.fuente === 'api' ? 'en vivo' : esc(n.fuente)) + ' · ' + hace(n.leido_en) : ''}</div>
+        ${n ? `<div class="v ${n8nCls === 'b' ? 'neg' : n8nCls === 'w' ? 'wr' : ''}">${ent(n.ejecuciones)} <span style="font-size:14px;color:var(--dim);font-weight:500">de ${ent(n.tope)}</span></div>
+        <div class="bar"><i class="${n8nCls}" style="width:${pct}%"></i><span class="mk" style="left:${Math.min(99, Math.round(100 * c.n8n_alerta / n.tope))}%"></span></div>
+        <div class="s">${ent(n.por_dia)} por día · proyección al cierre <b class="${n8nCls === 'b' ? 'neg' : n8nCls === 'w' ? 'wr' : ''}">${ent(n.proyeccion)}</b> (${proyPct}%) · aviso en ${ent(c.n8n_alerta)}</div>` : '<div class="v">—</div>'}
+        ${sinClave ? '<div class="s wr">Para verlo en vivo falta guardar la clave de n8n en Supabase (toca aquí).</div>' : ''}</div>`;
+    $('kN8n').onclick = () => modalN8n();
+  }
+
+  function contar(f) {
+    const cs = D.clientes;
+    if (f === 'todos') return cs.length;
+    if (f === 'riesgo') return cs.filter(c => num(c.riesgo) >= 30).length;
+    if (f === 'cobro') return cs.filter(c => c.proximo && diasA(c.proximo) <= 7 && c.tipo === 'medida').length;
+    return cs.filter(c => c.salud === f).length;
+  }
+  const diasA = d => Math.round((new Date(d + 'T12:00:00') - new Date(hoyMX() + 'T12:00:00')) / 864e5);
+  function pintarFiltros() {
+    const F = [['todos', 'Todos'], ['rojo', '🔴 Urgente'], ['ambar', '🟡 Revisar'], ['verde', '🟢 Bien'], ['gris', '⚪ Suspendidos'], ['riesgo', '⚠️ Riesgo de irse'], ['cobro', '💵 Cobro en 7 días']];
+    $('filtros').innerHTML = F.map(([k, t]) => `<button class="chip ${filtro === k ? 'on' : ''}" data-f="${k}">${t} · ${contar(k)}</button>`).join('');
+    $('filtros').querySelectorAll('.chip').forEach(b => b.onclick = () => { filtro = b.dataset.f; pintarFiltros(); pintarLista(); });
+  }
+  function pintarLista() {
+    const q = $('buscar').value.trim().toLowerCase();
+    let cs = D.clientes.filter(c => {
+      if (q && !(c.nombre.toLowerCase().includes(q) || c.unidades.some(u => u.nombre.toLowerCase().includes(q)))) return false;
+      if (filtro === 'todos') return true;
+      if (filtro === 'riesgo') return num(c.riesgo) >= 30;
+      if (filtro === 'cobro') return c.proximo && diasA(c.proximo) <= 7 && c.tipo === 'medida';
+      return c.salud === filtro;
+    });
+    if (!cs.length) { $('lista').innerHTML = '<div class="empty">Sin clientes en este filtro.</div>'; return; }
+    $('lista').innerHTML = cs.map(c => {
+      const us = c.unidades, u0 = us[0];
+      const rojos = us.flatMap(u => u.rojos || []), amar = us.flatMap(u => u.amarillos || []);
+      const why = c.salud === 'gris' ? (u0.grupo_motivo || ESTADOS[u0.estado] || 'Apagado') : (rojos[0] || amar[0] || '');
+      const in7 = us.reduce((a, u) => a + num(u.uso.in_7d), 0);
+      const dc = c.proximo ? diasA(c.proximo) : null;
+      const cobro = c.tipo === 'autoservicio' ? 'Stripe · renueva ' + fecha(c.proximo) : (dc === null ? 'Sin fecha de cobro' : dc < 0 ? '<span class="neg">Vencido ' + fecha(c.proximo) + '</span>' : 'Cobro ' + fecha(c.proximo) + (dc <= 3 ? ' <span class="wr">(' + (dc === 0 ? 'hoy' : 'en ' + dc + ' d') + ')</span>' : ''));
+      const riesgo = num(c.riesgo) >= 60 ? '<span class="tag r">Riesgo alto de irse</span>' : num(c.riesgo) >= 30 ? '<span class="tag a">Riesgo medio</span>' : '';
+      const extra = (rojos.length + amar.length) > 1 ? `<span class="tag">+${rojos.length + amar.length - 1} más</span>` : '';
+      return `<button class="cli" data-k="${esc(c.key)}">
+        <span class="dot ${c.salud}"></span>
+        <div class="b">
+          <div class="t"><b>${esc(c.nombre)}</b><span>${mxn(c.cuota)}<small style="color:var(--dim);font-weight:500">/mes</small></span></div>
+          <div class="meta">${c.tipo === 'autoservicio' ? 'Autoservicio · ' + esc(u0.plan) : 'A la medida'}${us.length > 1 ? ' · ' + us.length + ' números' : ''} · ${cobro}</div>
+          ${why ? `<div class="why ${c.salud}">${esc(why)}</div>` : ''}
+          <div class="tags"><span class="tag">${ent(in7)} mensajes en 7 días</span>
+            <span class="tag ${num(c.margen_mes) >= 0 ? 'g' : 'r'}">Utilidad ${mxn(c.margen_mes)}</span>${riesgo}${extra}</div>
+        </div></button>`;
+    }).join('');
+    $('lista').querySelectorAll('.cli').forEach(b => b.onclick = () => abrir(b.dataset.k));
+  }
+  $('buscar').addEventListener('input', pintarLista);
+  $('verOcultos').addEventListener('change', () => cargar().catch(e => toast(e.message)));
+
+  function pintarCampana() {
+    const a = D.avisos || [], r = a.filter(x => x.nivel === '2').length;
+    const n = $('nAvisos'); n.textContent = a.length; n.classList.toggle('hide', !a.length); n.classList.toggle('w', !r);
+  }
+  $('bAvisos').onclick = () => {
+    const a = (D.avisos || []).slice().sort((x, y) => (y.nivel - x.nivel) || x.cliente.localeCompare(y.cliente));
+    abrirModal('Avisos (' + a.length + ')', a.length ? a.map(x => `<div class="al" data-k="${esc(x.key || '')}"><span class="dot ${x.nivel === '2' ? 'rojo' : 'ambar'}"></span><div><b>${esc(x.cliente)}</b><span>${esc(x.texto)}</span></div></div>`).join('') : '<div class="empty">Todo en orden. 👌</div>');
+    $('mBody').querySelectorAll('.al').forEach(e => e.onclick = () => { if (e.dataset.k) { cerrarModal(); abrir(e.dataset.k); } else if (/n8n/.test(e.textContent)) { cerrarModal(); modalN8n(); } });
+  };
+  $('bRefrescar').onclick = async () => { $('bRefrescar').innerHTML = '<span class="spin"></span>'; try { await cargar(); if (cli) await cargarDetalle(); n8nAlDia(true); } catch (e) { toast(e.message); } $('bRefrescar').textContent = '↻'; };
+
+  // ===== Detalle =====
+  const TABS = [['resumen', 'Resumen'], ['chats', 'Pláticas'], ['citas', 'Citas y pedidos'], ['avisos', 'Avisos al dueño'], ['cobranza', 'Cobranza'], ['uso', 'Uso y costos'], ['alta', 'Proceso de alta'], ['control', 'Controles'], ['usuarios', 'Usuarios'], ['negocio', 'Su negocio'], ['bitacora', 'Bitácora']];
+  async function abrir(key) {
+    cli = D.clientes.find(c => c.key === key); if (!cli) return;
+    tab = 'resumen'; unidadSel = null; det = null;
+    $('sheet').classList.remove('hide'); document.body.style.overflow = 'hidden';
+    history.pushState({ s: 1 }, '');
+    pintarCabecera(); $('sIn').innerHTML = '<div class="empty"><span class="spin"></span> Cargando…</div>';
+    await cargarDetalle();
+  }
+  async function cargarDetalle() {
+    try { det = await rpc('maestro_cliente', { p_key: cli.key }); pintarCabecera(); pintarTab(); }
+    catch (e) { $('sIn').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+  }
+  function cerrar() { $('sheet').classList.add('hide'); document.body.style.overflow = ''; cli = null; det = null; }
+  $('sCerrar').onclick = () => history.back();
+  let ignorarPop = false;
+  window.addEventListener('popstate', () => { if (ignorarPop) { ignorarPop = false; return; } if (!$('modal').classList.contains('hide')) { cerrarModal(true); return; } if (!$('sheet').classList.contains('hide')) cerrar(); });
+  function pintarCabecera() {
+    $('sDot').className = 'dot ' + cli.salud;
+    $('sNombre').textContent = cli.nombre;
+    $('sSub').textContent = (cli.tipo === 'autoservicio' ? 'Autoservicio · ' + cli.unidades[0].plan : 'A la medida') + ' · ' + SALUD[cli.salud] + ' · ' + mxn(cli.cuota) + '/mes';
+    $('sTabs').innerHTML = TABS.filter(([k]) => k !== 'usuarios' || (det && det.usuarios && det.usuarios.length) || !det).map(([k, t]) => `<button class="tab ${tab === k ? 'on' : ''}" data-t="${k}">${t}</button>`).join('');
+    $('sTabs').querySelectorAll('.tab').forEach(b => b.onclick = () => { tab = b.dataset.t; pintarCabecera(); pintarTab(); $('sBody').scrollTop = 0; });
+  }
+  const unidades = () => (det && det.unidades) || cli.unidades;
+  const kv = (a, b) => `<div class="kv"><span>${a}</span><span>${b}</span></div>`;
+
+  function pintarTab() {
+    if (!det) return;
+    const f = { resumen: tResumen, chats: tChats, citas: tCitas, avisos: tAvisos, cobranza: tCobranza, uso: tUso, alta: tAlta, control: tControl, usuarios: tUsuarios, negocio: tNegocio, bitacora: tBitacora }[tab];
+    $('sIn').innerHTML = f();
+    enlazar();
+  }
+
+  function tResumen() {
+    const us = unidades();
+    const dia = det.diario || [];
+    const mapa = {}; dia.forEach(x => mapa[x.d] = x.n);
+    const dias = []; for (let i = 29; i >= 0; i--) { const d = new Date(Date.now() - i * 864e5).toLocaleDateString('en-CA', { timeZone: TZ }); dias.push([d, mapa[d] || 0]); }
+    const mx = Math.max(1, ...dias.map(x => x[1]));
+    const riesgo = Math.max(0, ...us.map(u => num(u.riesgo && u.riesgo.puntos)));
+    const razonesR = [...new Set(us.flatMap(u => (u.riesgo && u.riesgo.razones) || []))];
+    return `
+      <div class="grid2 c4">
+        <div class="k"><div class="l">Paga</div><div class="v">${mxn(cli.cuota)}</div><div class="s">${cli.tipo === 'autoservicio' ? 'Stripe' : esc(us[0].forma_pago || 'transferencia')}</div></div>
+        <div class="k"><div class="l">Utilidad del mes</div><div class="v ${num(cli.margen_mes) >= 0 ? 'pos' : 'neg'}">${mxn(cli.margen_mes)}</div><div class="s">Costos ${mxn(cli.costo_mes)}</div></div>
+        <div class="k"><div class="l">Mensajes 7 días</div><div class="v">${ent(us.reduce((a, u) => a + num(u.uso.in_7d), 0))}</div><div class="s">semana anterior ${ent(us.reduce((a, u) => a + num(u.uso.in_prev7d), 0))}</div></div>
+        <div class="k"><div class="l">Riesgo de irse</div><div class="v ${riesgo >= 60 ? 'neg' : riesgo >= 30 ? 'wr' : 'pos'}">${riesgo >= 60 ? 'Alto' : riesgo >= 30 ? 'Medio' : 'Bajo'}</div><div class="s">${riesgo} de 100</div></div>
+      </div>
+      ${razonesR.length ? `<div class="box" style="margin-top:12px"><h3>Por qué se podría ir</h3>${razonesR.map(r => `<div class="reason"><span class="dot ambar"></span><span>${esc(r)}</span></div>`).join('')}</div>` : ''}
+      <div class="box" style="margin-top:12px"><h3>Semáforo por número</h3>
+        ${us.map(u => `<div class="unit"><div class="t"><span class="dot ${u.salud}"></span><b>${esc(u.nombre)}</b><small class="meta">${esc(ESTADOS[u.estado] || u.estado)}</small></div>
+          ${(u.rojos || []).map(r => `<div class="reason"><span class="dot rojo"></span><span>${esc(r)}</span></div>`).join('')}
+          ${(u.amarillos || []).map(r => `<div class="reason"><span class="dot ambar"></span><span>${esc(r)}</span></div>`).join('')}
+          ${!(u.rojos || []).length && !(u.amarillos || []).length ? `<div class="reason"><span class="dot ${u.salud === 'gris' ? '' : 'verde'}"></span><span>${u.salud === 'gris' ? esc(u.grupo_motivo || ESTADOS[u.estado]) : 'Todo funciona bien'}</span></div>` : ''}
+          <div class="tags">
+            <span class="tag ${u.conectado ? 'g' : 'r'}">${u.conectado ? 'WhatsApp conectado' : 'Sin WhatsApp'}</span>
+            ${u.meta && u.meta.calidad ? `<span class="tag ${u.meta.calidad === 'GREEN' ? 'g' : u.meta.calidad === 'YELLOW' ? 'a' : 'r'}">Calidad ${u.meta.calidad === 'GREEN' ? 'verde' : u.meta.calidad === 'YELLOW' ? 'amarilla' : 'roja'}</span>` : ''}
+            ${u.meta && u.meta.limite ? `<span class="tag">Límite ${esc(String(u.meta.limite).replace('TIER_', ''))}/día</span>` : ''}
+            ${u.meta && u.meta.plantillas ? `<span class="tag">${u.meta.plantillas_ok}/${u.meta.plantillas} plantillas aprobadas</span>` : ''}
+            <span class="tag">Último mensaje ${hace(u.uso.ultimo_in)}</span>
+            ${u.meta && u.meta.revisado ? `<span class="tag">Meta revisado ${hace(u.meta.revisado)}</span>` : ''}
+          </div></div>`).join('')}
+      </div>
+      <div class="box"><h3>Mensajes que recibe por día (30 días)</h3>
+        <div class="spark">${dias.map(([d, n]) => `<i class="${n ? '' : 'z'}" style="height:${Math.max(3, Math.round(100 * n / mx))}%" title="${d}: ${n}"></i>`).join('')}</div>
+        <div class="meta" style="display:flex;justify-content:space-between"><span>${fecha(dias[0][0])}</span><span>máx ${mx}/día</span><span>hoy</span></div>
+      </div>`;
+  }
+
+  function tChats() {
+    const cs = det.chats || [];
+    if (!cs.length) return '<div class="empty">Todavía no tiene pláticas.</div>';
+    const multi = unidades().length > 1;
+    return `<div class="box"><h3>${cs.length} pláticas (las más recientes)</h3>${cs.map(c => `
+      <div class="item" data-chat="${esc(c.tenant_id)}|${esc(c.telefono)}" data-n="${esc(c.nombre || c.telefono)}">
+        <div class="t"><b>${esc(c.nombre || c.telefono)}</b><small>${hace(c.ultimo)}</small></div>
+        <p>${c.ultimo_rol === 'assistant' ? '🤖 ' : ''}${esc(c.ultimo_texto || '—')}</p>
+        <div class="tags"><span class="tag">${esc(c.estado || 'nuevo')}</span>${c.etapa ? `<span class="tag">${esc(c.etapa)}</span>` : ''}${c.asesor ? `<span class="tag">Asesor: ${esc(c.asesor)}</span>` : ''}${multi ? `<span class="tag">${esc(c.unidad)}</span>` : ''}<span class="tag">${ent(c.mensajes)} mensajes</span></div>
+      </div>`).join('')}</div>`;
+  }
+  async function verChat(tid, tel, nombre) {
+    abrirModal(nombre, '<div class="empty"><span class="spin"></span></div>');
+    try {
+      const ms = await rpc('maestro_chat', { p_tenant: tid, p_telefono: tel });
+      let dia = '';
+      $('mBody').innerHTML = '<div class="chat">' + (ms.length ? ms.map(m => {
+        const d = new Date(m.f).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short', timeZone: TZ });
+        const sep = d !== dia ? (dia = d, `<div class="day">${d}</div>`) : '';
+        return sep + `<div class="bub ${m.rol === 'user' ? 'u' : 'a'}">${esc(m.m)}<small>${new Date(m.f).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: TZ })}</small></div>`;
+      }).join('') : '<div class="empty">Sin mensajes.</div>') + '</div>';
+      $('mBody').scrollTop = $('mBody').scrollHeight;
+    } catch (e) { $('mBody').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+  }
+
+  function tCitas() {
+    const cs = det.citas || [];
+    if (!cs.length) return '<div class="empty">Sin citas ni pedidos registrados.</div>';
+    return `<div class="box"><h3>${cs.length} citas y pedidos</h3>${cs.map(c => `
+      <div class="item" style="cursor:default"><div class="t"><b>${c.tipo === 'pedido' ? '🧾 Pedido' : '📅 Cita'} · ${esc(c.nombre || c.telefono || '')}</b><small>${esc(c.estado || '')}</small></div>
+        <p>${c.fecha ? fecha(c.fecha) + (c.hora ? ' ' + esc(c.hora) : '') + ' · ' : ''}${esc(c.resumen || c.detalle || '')}${num(c.total) ? ' · ' + mxn(c.total) : ''}</p>
+        <div class="meta">Registrado ${fechaHora(c.creado)}</div></div>`).join('')}</div>`;
+  }
+
+  function tAvisos() {
+    const a = det.avisos || [];
+    if (!a.length) return '<div class="empty">No se han mandado avisos al dueño ni a asesores.</div>';
+    const fall = a.filter(x => x.estado === 'fallido').length;
+    return `<div class="box"><h3>Últimos ${a.length} avisos${fall ? ' · <span class="neg">' + fall + ' fallidos</span>' : ''}</h3>${a.map(x => `
+      <div class="item" style="cursor:default"><div class="t"><b>${x.estado === 'enviado' ? '✅' : x.estado === 'fallido' ? '❌' : '⏳'} Para ${esc(x.para)}</b><small>${fechaHora(x.creado)}</small></div>
+        <p>${esc(x.resumen || x.plantilla)}</p>${x.error ? `<div class="msg err" style="margin-top:6px;font-size:12px">${esc(x.error)}</div>` : ''}</div>`).join('')}</div>`;
+  }
+
+  function tCobranza() {
+    const us = unidades(), u0 = us[0], ps = det.pagos || [];
+    const manual = cli.tipo !== 'autoservicio';
+    const dc = cli.proximo ? diasA(cli.proximo) : null;
+    return `
+      <div class="box"><h3>Membresía</h3>
+        ${kv('Tipo', manual ? 'A la medida' : 'Autoservicio · plan ' + esc(u0.plan))}
+        ${kv('Cuota mensual', mxn(cli.cuota) + (us.length > 1 ? ' <small class="meta">(' + us.map(u => esc(u.nombre) + ' ' + mxn(u.cuota)).join(' · ') + ')</small>' : ''))}
+        ${kv('Forma de pago', manual ? esc(u0.forma_pago || 'transferencia') : 'Stripe (automático)')}
+        ${kv(manual ? 'Próximo cobro' : 'Renueva', cli.proximo ? fecha(cli.proximo) + (dc < 0 ? ' <span class="neg">(vencido ' + (-dc) + ' d)</span>' : dc <= 3 ? ' <span class="wr">(' + (dc === 0 ? 'hoy' : 'en ' + dc + ' d') + ')</span>' : '') : '—')}
+        ${manual ? kv('Suspensión automática', u0.auto_suspender ? 'Sí, ' + u0.dias_gracia + ' días después del vencimiento' : 'No') : kv('Si falla la tarjeta', 'Stripe reintenta y se suspende al vencer la gracia')}
+        ${u0.gracia_hasta ? kv('Gracia hasta', '<span class="neg">' + fechaHora(u0.gracia_hasta) + '</span>') : ''}
+        ${kv('Cobrado este mes', mxn(cli.cobrado_mes))}
+        ${kv('Cobrado en total', mxn(cli.cobrado_total))}
+        <div class="btns" style="margin-top:12px">
+          ${manual ? '<button class="btn pri" data-a="pago">Registrar pago</button>' : ''}
+          <button class="btn" data-a="cobro">Editar cobro</button>
+        </div>
+      </div>
+      <div class="box"><h3>Pagos (${ps.length})</h3>
+        ${ps.length ? `<div class="scroll-x"><table><tr><th>Fecha</th><th>Periodo</th><th>Método</th><th class="n">Monto</th><th></th></tr>
+        ${ps.map(p => `<tr><td>${fecha(p.fecha)}${us.length > 1 ? '<br><small class="meta">' + esc(p.unidad) + '</small>' : ''}</td><td><small>${p.periodo_inicio ? fecha(p.periodo_inicio) + ' – ' + fecha(p.periodo_fin) : '—'}</small></td>
+          <td>${p.metodo === 'stripe' ? '💳 Stripe' : esc(p.metodo || '—')}${p.referencia ? '<br><small class="meta">' + esc(p.referencia) + '</small>' : ''}</td><td class="n">${mxn(p.monto)}</td>
+          <td>${p.metodo !== 'stripe' ? `<button class="btn" style="min-height:32px;padding:4px 10px" data-a="editpago" data-id="${esc(p.id)}">Editar</button>` : ''}</td></tr>`).join('')}</table></div>` : '<div class="empty">Sin pagos registrados.</div>'}
+      </div>`;
+  }
+
+  function tUso() {
+    const us = unidades(), c = D.config;
+    const fila = (l, f) => `<tr><td>${l}</td>${us.map(u => `<td class="n">${f(u)}</td>`).join('')}${us.length > 1 ? `<td class="n"><b>${f(null)}</b></td>` : ''}</tr>`;
+    const sum = (g) => us.reduce((a, u) => a + num(g(u)), 0);
+    const v = (g, fmt) => u => fmt(u ? g(u) : sum(g));
+    return `<div class="box"><h3>Este mes</h3><div class="scroll-x"><table>
+      <tr><th></th>${us.map(u => `<th class="n">${esc(u.nombre)}</th>`).join('')}${us.length > 1 ? '<th class="n">Total</th>' : ''}</tr>
+      ${fila('Mensajes recibidos', v(u => u.uso.in_mes, ent))}
+      ${fila('Respuestas del agente', v(u => u.uso.out_mes, ent))}
+      ${fila('Personas atendidas', v(u => u.uso.chats_mes, ent))}
+      ${fila('Prospectos nuevos', v(u => u.uso.leads_mes, ent))}
+      ${fila('Calientes', v(u => u.uso.calientes_mes, ent))}
+      ${fila('Citas / pedidos', v(u => num(u.uso.citas_mes) + num(u.uso.pedidos_mes), ent))}
+      ${fila('Avisos al dueño', v(u => u.uso.avisos_mes, ent))}
+      ${fila('Ejecuciones de n8n (aprox.)', v(u => u.uso.ejecuciones_mes, ent))}
+      ${us.some(u => u.uso.limite) ? fila('Contactos del plan', u => u ? (u.uso.limite ? ent(u.uso.contactos) + ' / ' + ent(u.uso.limite) : '—') : '') : ''}
+      <tr><td colspan="${us.length + 2}" style="color:var(--dim);font-size:12px;padding-top:14px">COSTOS Y UTILIDAD</td></tr>
+      ${fila('Gasto de IA', v(u => u.costos.ia, mxn))}
+      ${fila('Plantillas de Meta', v(u => u.costos.plantillas, mxn))}
+      ${fila('Parte de n8n', v(u => u.costos.n8n, mxn))}
+      ${fila('Costo total', v(u => u.costos.total, mxn))}
+      ${fila('Ingreso neto', v(u => u.neto, mxn))}
+      ${fila('<b>Utilidad</b>', v(u => u.costos.margen, x => `<b class="${x >= 0 ? 'pos' : 'neg'}">${mxn(x)}</b>`))}
+      ${fila('IA desde que entró', v(u => u.costos.ia_total, mxn))}
+    </table></div>
+    <div class="note">Plantillas a ${mxn(c.plantilla_utility_mxn)} (aviso) y ${mxn(c.plantilla_marketing_mxn)} (seguimiento). n8n: ${mxn(c.n8n_costo_mes_mxn)} al mes entre ${ent(c.n8n_tope)} ejecuciones. Autoservicio: neto sin IVA y comisión de Stripe. Lo cambias en ⚙︎ Ajustes.</div></div>`;
+  }
+
+  function tAlta() {
+    return unidades().map(u => {
+      const st = u.alta || [], hechos = st.filter(s => s.ok).length;
+      return `<div class="box"><h3>${esc(u.nombre)} · ${hechos} de ${st.length} pasos</h3>
+        <div class="bar" style="margin:0 0 12px"><i class="${hechos === st.length ? '' : 'w'}" style="width:${Math.round(100 * hechos / st.length)}%"></i></div>
+        <div class="steps">${st.map((s, i) => `<div class="step ${s.ok ? 'ok' : ''}"><i>${s.ok ? '✓' : i + 1}</i><span>${esc(s.paso)}${s.fecha ? ' <small class="meta">· ' + fecha(s.fecha) + '</small>' : ''}</span></div>`).join('')}</div>
+        <div class="meta" style="margin-top:10px">Alta: ${fecha(u.fecha_alta)} · ${esc(ESTADOS[u.estado] || u.estado)}</div></div>`;
+    }).join('');
+  }
+
+  function tControl() {
+    const us = unidades(), u0 = us[0], manual = cli.tipo !== 'autoservicio';
+    const crmOn = us.every(u => u.crm_activo);
+    return `<div class="box"><h3>Agente de WhatsApp</h3>
+      ${us.map(u => `<div class="ctl"><div class="x"><b>${esc(u.nombre)}</b><small>${u.activo ? 'Contestando' : 'Apagado' + (u.suspendido_por === 'auto' ? ' por falta de pago' : '')}${u.whatsapp ? ' · ' + esc(u.whatsapp) : ''}</small></div>
+        <label class="sw"><input type="checkbox" data-agente="${esc(u.id)}" ${u.activo ? 'checked' : ''} ${u.estado === 'cancelado' ? 'disabled' : ''}><span></span></label></div>`).join('')}
+      </div>
+      <div class="box"><h3>CRM</h3>
+        <div class="ctl"><div class="x"><b>Acceso al CRM ${crmOn ? 'activo' : 'suspendido'}</b><small>${crmOn ? (manual ? 'Sus asesores pueden entrar y trabajar' : 'Puede entrar a su panel') : esc(u0.grupo_motivo || 'Suspendido')}${!crmOn && u0.grupo_suspendido_en ? ' · desde ' + fecha(u0.grupo_suspendido_en) : ''}</small></div>
+          <label class="sw"><input type="checkbox" id="swCrm" ${crmOn ? 'checked' : ''}><span></span></label></div>
+        <div class="note">${manual ? 'Al suspender, sus usuarios no pueden entrar; sus prospectos se conservan.' : 'Al suspender, su panel muestra "suspendido" y su agente se apaga hasta que lo reactives.'}</div>
+      </div>
+      ${manual ? `<div class="box"><h3>Suspensión automática por falta de pago</h3>
+        <div class="ctl"><div class="x"><b>${u0.auto_suspender ? 'Activada' : 'Desactivada'}</b><small>Apaga el agente ${u0.dias_gracia} días después del vencimiento si no registras el pago. Al registrar el pago se reactiva solo.</small></div>
+          <label class="sw"><input type="checkbox" id="swAuto" ${u0.auto_suspender ? 'checked' : ''}><span></span></label></div></div>` : ''}
+      ${!manual ? `<div class="box"><h3>Plan</h3>${us.map(u => `<div class="ctl"><div class="x"><b>${esc(u.plan)}</b><small>${ent(u.uso.contactos)} de ${ent(u.uso.limite)} contactos este mes</small></div>
+        <select class="inp" style="width:auto" data-plan="${esc(u.id)}"><option value="arranque" ${u.plan_clave === 'arranque' ? 'selected' : ''}>Arranque</option><option value="crecimiento" ${u.plan_clave === 'crecimiento' ? 'selected' : ''}>Crecimiento</option><option value="pro" ${u.plan_clave === 'pro' ? 'selected' : ''}>Pro</option></select></div>`).join('')}
+        <div class="note">Cambiar el plan aquí ajusta límites y funciones; el cobro de Stripe se cambia desde Stripe.</div></div>` : ''}
+      <div class="box"><h3>Visibilidad</h3><div class="ctl"><div class="x"><b>Ocultar de la lista</b><small>Para demos, pruebas o clientes que ya no quieres ver. No apaga nada.</small></div>
+        <label class="sw"><input type="checkbox" id="swOculto" ${u0.oculto ? 'checked' : ''}><span></span></label></div></div>`;
+  }
+
+  function tUsuarios() {
+    const us = det.usuarios || [];
+    if (!us.length) return '<div class="empty">Sin usuarios.</div>';
+    return `<div class="box"><h3>${us.length} usuarios</h3>${us.map(u => `<div class="ctl"><div class="x"><b>${esc(u.nombre || u.correo)}</b>
+        <small>${esc(u.rol || '')} · ${u.tiene_acceso ? 'entró ' + hace(u.login) : 'sin acceso creado'} · ${ent(u.leads)} prospectos${num(u.sin_contactar) ? ' · <span class="wr">' + ent(u.sin_contactar) + ' sin contactar</span>' : ''}</small>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" data-recibe="${esc(u.id)}" ${u.recibe_leads ? 'checked' : ''}> Recibe prospectos</label></div>
+        <label class="sw" title="Activo"><input type="checkbox" data-usuario="${esc(u.id)}" ${u.activo ? 'checked' : ''}><span></span></label></div>`).join('')}</div>`;
+  }
+
+  function tNegocio() {
+    return (det.config || []).map(c => c.atiende_desde ? `<div class="box"><h3>${esc(c.nombre)}</h3><div class="note">Este número lo atiende el agente de otra unidad.</div></div>` : `
+      <div class="box"><h3>${esc(c.nombre)}${c.giro ? ' · ' + esc(c.giro) : ''}</h3>
+        <form data-neg="${esc(c.id)}">
+          <label class="f">Descripción del negocio</label><textarea class="inp" name="descripcion">${esc(c.descripcion)}</textarea>
+          <label class="f">Productos / servicios y precios</label><textarea class="inp" name="productos">${esc(c.productos)}</textarea>
+          <label class="f">Horario</label><input class="inp" name="horario" value="${esc(c.horario)}">
+          <label class="f">Tono</label><input class="inp" name="tono" value="${esc(c.tono)}">
+          <label class="f">Preguntas frecuentes</label><textarea class="inp" name="faqs">${esc(c.faqs)}</textarea>
+          <label class="f">Reglas del agente</label><textarea class="inp" name="reglas">${esc(c.reglas)}</textarea>
+          <label class="f">WhatsApp del dueño (recibe avisos)</label><input class="inp" name="telefono_dueno" value="${esc(c.telefono_dueno)}" inputmode="tel">
+          <label class="f">Notas internas (solo tú las ves)</label><textarea class="inp" name="notas">${esc(c.notas)}</textarea>
+          <button class="btn pri" style="margin-top:12px" type="submit">Guardar</button><div class="fm"></div>
+        </form>
+        ${c.plantillas && c.plantillas.length ? `<h3 style="margin-top:16px">Plantillas en Meta</h3>${c.plantillas.map(p => `<div class="kv"><span>${esc(p.n || ('error ' + p.error))}</span><span class="${p.s === 'APPROVED' ? 'pos' : p.s ? 'wr' : 'neg'}">${esc(p.s || '')}</span></div>`).join('')}` : ''}
+      </div>`).join('');
+  }
+
+  function tBitacora() {
+    const b = det.bitacora || [];
+    const T = { pago_registrado: 'Pago registrado', pago_editado: 'Pago editado', agente_encendido: 'Agente encendido', agente_apagado: 'Agente apagado', crm_suspendido: 'CRM suspendido', crm_reactivado: 'CRM reactivado', cobro_editado: 'Cobro editado', negocio_editado: 'Información del negocio editada', plan_editado: 'Plan cambiado', suspension_automatica: 'Suspendido automáticamente por falta de pago', ocultado: 'Ocultado', mostrado: 'Visible de nuevo', usuario_editado: 'Usuario editado' };
+    if (!b.length) return '<div class="empty">Sin movimientos registrados todavía.</div>';
+    return `<div class="box"><h3>Movimientos</h3>${b.map(x => `<div class="item" style="cursor:default"><div class="t"><b>${esc(T[x.accion] || x.accion)}</b><small>${fechaHora(x.creado)}</small></div>
+      <p>${x.detalle && x.detalle.monto ? mxn(x.detalle.monto) + ' · ' : ''}${esc(x.quien || 'sistema')}</p></div>`).join('')}</div>`;
+  }
+
+  // ===== Acciones =====
+  function enlazar() {
+    const B = $('sIn');
+    B.querySelectorAll('[data-chat]').forEach(e => e.onclick = () => { const [t, tel] = e.dataset.chat.split('|'); verChat(t, tel, e.dataset.n); });
+    B.querySelectorAll('[data-a="pago"]').forEach(e => e.onclick = modalPago);
+    B.querySelectorAll('[data-a="cobro"]').forEach(e => e.onclick = modalCobro);
+    B.querySelectorAll('[data-a="editpago"]').forEach(e => e.onclick = () => modalEditPago(e.dataset.id));
+    B.querySelectorAll('[data-agente]').forEach(e => e.onchange = () => accion(e, () => rpc('maestro_set_agente', { p_tenant: e.dataset.agente, p_on: e.checked }), e.checked ? '¿Encender el agente?' : '¿Apagar el agente? Deja de contestar en WhatsApp.'));
+    const crm = $('swCrm'); if (crm) crm.onchange = () => accion(crm, () => rpc('maestro_set_crm', { p_key: cli.key, p_on: crm.checked, p_motivo: crm.checked ? null : 'Suspendido por administración' }), crm.checked ? '¿Reactivar el CRM?' : '¿Suspender el CRM? Sus usuarios ya no podrán entrar.');
+    const au = $('swAuto'); if (au) au.onchange = () => accion(au, () => rpc('maestro_set_cobro', { p_key: cli.key, p_cuota: null, p_proximo: null, p_cobro_activo: null, p_forma: null, p_auto_suspender: au.checked, p_dias_gracia: null }));
+    const oc = $('swOculto'); if (oc) oc.onchange = () => accion(oc, () => rpc('maestro_set_oculto', { p_key: cli.key, p_oculto: oc.checked }));
+    B.querySelectorAll('[data-plan]').forEach(e => e.onchange = () => accion(e, () => rpc('maestro_set_plan', { p_tenant: e.dataset.plan, p_plan: e.value, p_extra: null }), '¿Cambiar el plan a ' + e.value + '?'));
+    B.querySelectorAll('[data-usuario]').forEach(e => e.onchange = () => accion(e, () => rpc('maestro_usuario_set', { p_usuario: e.dataset.usuario, p_activo: e.checked, p_recibe: null })));
+    B.querySelectorAll('[data-recibe]').forEach(e => e.onchange = () => accion(e, () => rpc('maestro_usuario_set', { p_usuario: e.dataset.recibe, p_activo: null, p_recibe: e.checked })));
+    B.querySelectorAll('form[data-neg]').forEach(f => f.onsubmit = async ev => {
+      ev.preventDefault(); const b = f.querySelector('button'); b.disabled = true;
+      const p = {}; new FormData(f).forEach((v, k) => p[k] = v);
+      try { await rpc('maestro_guardar_negocio', { p_tenant: f.dataset.neg, p }); f.querySelector('.fm').innerHTML = '<div class="msg ok">Guardado. El agente ya usa esta información.</div>'; await recargarTodo(false); }
+      catch (e) { f.querySelector('.fm').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+      b.disabled = false;
+    });
+  }
+  async function accion(el, fn, confirmar) {
+    const prev = el.type === 'checkbox' ? !el.checked : null;
+    if (confirmar && !(await preguntar(confirmar))) { if (prev !== null) el.checked = prev; return; }
+    el.disabled = true;
+    try { await fn(); toast('Listo'); await recargarTodo(true); }
+    catch (e) { if (prev !== null) el.checked = prev; toast(e.message); el.disabled = false; }
+  }
+  async function recargarTodo(repintar) { await cargar(); await cargarDetalle(); if (!repintar) {} }
+
+  function preguntar(t) {
+    return new Promise(ok => {
+      abrirModal('Confirmar', `<p style="margin:0 0 14px">${esc(t)}</p><div class="btns"><button class="btn pri" id="qSi">Sí</button><button class="btn" id="qNo">Cancelar</button></div>`);
+      $('qSi').onclick = () => { cerrarModal(); ok(true); };
+      $('qNo').onclick = () => { cerrarModal(); ok(false); };
+      modalAlCerrar = () => ok(false);
+    });
+  }
+
+  function modalPago() {
+    const us = unidades();
+    abrirModal('Registrar pago · ' + cli.nombre, `<form id="fPago">
+      <label class="f">Monto</label><input class="inp" name="monto" inputmode="decimal" value="${num(cli.cuota) || ''}" required>
+      ${us.length > 1 ? `<div class="note">Se reparte entre sus ${us.length} números según la cuota de cada uno.</div>` : ''}
+      <label class="f">Fecha del pago</label><input class="inp" name="fecha" type="date" value="${hoyMX()}" required>
+      <label class="f">Método</label><select class="inp" name="metodo"><option>Transferencia</option><option>Efectivo</option><option>Depósito</option><option>Tarjeta (terminal)</option><option>Otro</option></select>
+      <label class="f">Referencia (opcional)</label><input class="inp" name="referencia" placeholder="Folio, banco…">
+      <label class="f">Notas (opcional)</label><input class="inp" name="notas" placeholder="Ej. mensualidad noviembre">
+      <label class="chk"><input type="checkbox" name="avanzar" checked> Mover el próximo cobro un mes (de ${fecha(cli.proximo)} a ${cli.proximo ? fecha(new Date(new Date(cli.proximo + 'T12:00:00').setMonth(new Date(cli.proximo + 'T12:00:00').getMonth() + 1)).toISOString().slice(0, 10)) : '—'})</label>
+      <label class="chk"><input type="checkbox" name="reactivar" checked> Si está suspendido por falta de pago, reactivar agente y CRM</label>
+      <button class="btn pri" style="width:100%;margin-top:16px" type="submit">Registrar pago</button><div id="pMsg"></div></form>`);
+    $('fPago').onsubmit = async ev => {
+      ev.preventDefault(); const f = ev.target, b = f.querySelector('button'); b.disabled = true;
+      const monto = parseFloat(String(f.monto.value).replace(/[^0-9.]/g, ''));
+      try {
+        const r = await rpc('maestro_registrar_pago', { p_key: cli.key, p_monto: monto, p_fecha: f.fecha.value, p_metodo: f.metodo.value, p_referencia: f.referencia.value || null, p_notas: f.notas.value || null, p_avanzar: f.avanzar.checked, p_reactivar: f.reactivar.checked });
+        cerrarModal(); toast('Pago de ' + mxn(monto) + ' registrado' + (r.agentes_reactivados ? ' · ' + r.agentes_reactivados + ' agente(s) reactivado(s)' : '') + (r.crm_reactivado ? ' · CRM reactivado' : ''));
+        await recargarTodo(true);
+      } catch (e) { $('pMsg').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; b.disabled = false; }
+    };
+  }
+
+  function modalCobro() {
+    const u0 = unidades()[0], manual = cli.tipo !== 'autoservicio';
+    abrirModal('Cobro · ' + cli.nombre, `<form id="fCobro">
+      ${manual ? `<label class="f">Cuota mensual total</label><input class="inp" name="cuota" inputmode="decimal" value="${num(cli.cuota)}">
+      <label class="f">Próximo cobro</label><input class="inp" name="proximo" type="date" value="${esc(cli.proximo || '')}">
+      <label class="f">Forma de pago</label><select class="inp" name="forma">${['transferencia', 'efectivo', 'depósito', 'stripe', 'otro'].map(x => `<option ${u0.forma_pago === x ? 'selected' : ''}>${x}</option>`).join('')}</select>
+      <label class="f">Días de gracia antes de suspender</label><input class="inp" name="gracia" type="number" min="0" max="60" value="${u0.dias_gracia}">
+      <label class="chk"><input type="checkbox" name="auto" ${u0.auto_suspender ? 'checked' : ''}> Suspender automático si no paga</label>` : '<div class="note">Este cliente paga por Stripe: el monto y la fecha los pone Stripe. Aquí solo puedes dejar de contarlo como ingreso.</div>'}
+      <label class="chk"><input type="checkbox" name="activo" ${u0.cobro_activo ? 'checked' : ''}> Cobro activo (cuenta en el ingreso mensual)</label>
+      <button class="btn pri" style="width:100%;margin-top:16px" type="submit">Guardar</button><div id="cMsg"></div></form>`);
+    $('fCobro').onsubmit = async ev => {
+      ev.preventDefault(); const f = ev.target;
+      try {
+        await rpc('maestro_set_cobro', { p_key: cli.key, p_cuota: manual ? parseFloat(String(f.cuota.value).replace(/[^0-9.]/g, '')) : null, p_proximo: manual && f.proximo.value ? f.proximo.value : null, p_cobro_activo: f.activo.checked, p_forma: manual ? f.forma.value : null, p_auto_suspender: manual ? f.auto.checked : null, p_dias_gracia: manual ? parseInt(f.gracia.value, 10) : null });
+        cerrarModal(); toast('Cobro actualizado'); await recargarTodo(true);
+      } catch (e) { $('cMsg').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+    };
+  }
+
+  function modalEditPago(id) {
+    const p = (det.pagos || []).find(x => x.id === id); if (!p) return;
+    abrirModal('Editar pago', `<form id="fEP">
+      <label class="f">Monto</label><input class="inp" name="monto" inputmode="decimal" value="${num(p.monto)}">
+      <label class="f">Fecha</label><input class="inp" name="fecha" type="date" value="${esc(p.fecha)}">
+      <label class="f">Método</label><input class="inp" name="metodo" value="${esc(p.metodo || '')}">
+      <label class="f">Referencia</label><input class="inp" name="referencia" value="${esc(p.referencia || '')}">
+      <label class="f">Notas</label><input class="inp" name="notas" value="${esc(p.notas || '')}">
+      <div class="note">Editar no cambia la fecha del próximo cobro; esa se cambia en "Editar cobro".</div>
+      <button class="btn pri" style="width:100%;margin-top:16px" type="submit">Guardar</button><div id="eMsg"></div></form>`);
+    $('fEP').onsubmit = async ev => {
+      ev.preventDefault(); const f = ev.target;
+      try { await rpc('maestro_editar_pago', { p_pago: id, p_monto: parseFloat(String(f.monto.value).replace(/[^0-9.]/g, '')), p_fecha: f.fecha.value, p_metodo: f.metodo.value, p_referencia: f.referencia.value, p_notas: f.notas.value }); cerrarModal(); toast('Pago actualizado'); await recargarTodo(true); }
+      catch (e) { $('eMsg').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+    };
+  }
+
+  function modalN8n() {
+    const n = D.n8n, det2 = n && n.detalle && n.detalle.por_flujo ? Object.entries(n.detalle.por_flujo).sort((a, b) => b[1] - a[1]) : [];
+    const sinClave = !n || n.fuente !== 'api' || (n8nEstado && n8nEstado.motivo === 'sin_clave');
+    abrirModal('Ejecuciones de n8n', `
+      ${n ? kv('Este periodo', ent(n.ejecuciones) + ' de ' + ent(n.tope)) + kv('Ritmo', ent(n.por_dia) + ' por día') + kv('Proyección al cierre', ent(n.proyeccion)) + kv('Última lectura', fechaHora(n.leido_en) + ' · ' + (n.fuente === 'api' ? 'en vivo' : esc(n.fuente))) : '<div class="note">Sin lecturas.</div>'}
+      ${det2.length ? '<h3 style="font-size:14px;color:var(--dim);margin:16px 0 6px">Por flujo</h3>' + det2.map(([k, v]) => kv(esc(k), ent(v))).join('') : ''}
+      ${sinClave ? `<div class="box" style="margin-top:16px"><h3>Para verlo en vivo</h3>
+        <ol style="margin:0;padding-left:18px;font-size:14px;line-height:1.6">
+          <li>En n8n: <b>Settings → n8n API → Create an API key</b>. Copia la clave.</li>
+          <li>En Supabase: <b>Edge Functions → Secrets → Add new secret</b>. Nombre <code>N8N_API_KEY</code>, valor: la clave. Guardar.</li>
+          <li>Regresa aquí y toca <b>Leer ahora</b>.</li></ol></div>` : ''}
+      <button class="btn pri" style="width:100%;margin-top:14px" id="bLeerN8n">Leer ahora</button>`);
+    $('bLeerN8n').onclick = async () => { $('bLeerN8n').innerHTML = '<span class="spin"></span>'; await n8nAlDia(true); cerrarModal(); };
+  }
+
+  $('bAjustes').onclick = () => {
+    const c = D.config;
+    abrirModal('Ajustes de costos', `<form id="fAj">
+      <label class="f">Costo mensual de n8n (MXN)</label><input class="inp" name="n8n_costo_mes_mxn" inputmode="decimal" value="${c.n8n_costo_mes_mxn}">
+      <label class="f">Ejecuciones incluidas en tu plan</label><input class="inp" name="n8n_tope" inputmode="numeric" value="${c.n8n_tope}">
+      <label class="f">Avisarme al llegar a</label><input class="inp" name="n8n_alerta" inputmode="numeric" value="${c.n8n_alerta}">
+      <label class="f">Día en que se reinician las ejecuciones</label><input class="inp" name="n8n_dia_corte" type="number" min="1" max="28" value="${c.n8n_dia_corte}">
+      <label class="f">Costo por plantilla de aviso (utilidad, MXN)</label><input class="inp" name="plantilla_utility_mxn" inputmode="decimal" value="${c.plantilla_utility_mxn}">
+      <label class="f">Costo por plantilla de seguimiento (marketing, MXN)</label><input class="inp" name="plantilla_marketing_mxn" inputmode="decimal" value="${c.plantilla_marketing_mxn}">
+      <button class="btn pri" style="width:100%;margin-top:16px" type="submit">Guardar</button>
+      <button class="btn" style="width:100%;margin-top:10px" type="button" id="bSalir">Cerrar sesión</button><div id="aMsg"></div></form>`);
+    $('fAj').onsubmit = async ev => {
+      ev.preventDefault(); const p = {}; new FormData(ev.target).forEach((v, k) => p[k] = v);
+      try { await rpc('maestro_guardar_config', { p }); cerrarModal(); toast('Ajustes guardados'); await cargar(); }
+      catch (e) { $('aMsg').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+    };
+    $('bSalir').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+  };
+
+  // ===== Modal =====
+  let modalAlCerrar = null, modalConHistoria = false;
+  function abrirModal(t, html) {
+    $('mTit').textContent = t; $('mBody').innerHTML = html; $('mBody').scrollTop = 0;
+    if ($('modal').classList.contains('hide')) { history.pushState({ m: 1 }, ''); modalConHistoria = true; }
+    $('modal').classList.remove('hide'); modalAlCerrar = null;
+  }
+  function cerrarModal(desdeHistoria) {
+    if ($('modal').classList.contains('hide')) return;
+    $('modal').classList.add('hide');
+    const f = modalAlCerrar; modalAlCerrar = null;
+    if (!desdeHistoria && modalConHistoria) { modalConHistoria = false; ignorarPop = true; history.back(); } else modalConHistoria = false;
+    if (f && desdeHistoria) f();
+  }
+  $('mCerrar').onclick = () => { const f = modalAlCerrar; modalAlCerrar = null; cerrarModal(); if (f) f(); };
+  $('modal').addEventListener('click', e => { if (e.target === $('modal')) $('mCerrar').onclick(); });
+
+  // Se refresca solo cada 5 minutos con la pestaña visible
+  setInterval(() => { if (document.visibilityState === 'visible' && D && $('modal').classList.contains('hide')) cargar().catch(() => {}); }, 5 * 60000);
+
+  window.__maestro = { pintarConDatos: d => { D = d; vista('app'); pintarResumen(); pintarFiltros(); pintarLista(); pintarCampana(); }, abrirConDetalle: (k, dd) => { cli = D.clientes.find(c => c.key === k); det = dd; tab = 'resumen'; $('sheet').classList.remove('hide'); pintarCabecera(); pintarTab(); }, setTab: t => { tab = t; pintarCabecera(); pintarTab(); } };
+  arrancar();
+})();
+</script>
+</body>
+</html>
