@@ -302,7 +302,8 @@
     const margenCls = num(r.margen_mes) >= 0 ? 'pos' : 'neg';
     $('kpis').innerHTML = `
       <div class="k"><div class="l">Ingreso mensual (MRR)</div><div class="v">${mxn(r.mrr)}</div>
-        <div class="s">A la medida ${mxn(r.mrr_medida)} · Autoservicio ${mxn(r.mrr_autoservicio)}</div></div>
+        <div class="s">A la medida ${mxn(r.mrr_medida)} · Autoservicio ${mxn(r.mrr_autoservicio)}</div>
+        ${num(r.mrr_renovar) > num(r.mrr) ? `<div class="s">Al renovar: <b style="color:var(--text)">${mxn(r.mrr_renovar)}</b> · ${r.en_promo} en mes de promoción</div>` : ''}</div>
       <div class="k"><div class="l">Cobrado este mes</div><div class="v">${mxn(r.cobrado_mes)}</div>
         <div class="s">Stripe ${mxn(r.cobrado_mes_stripe)} · Mes pasado ${mxn(r.cobrado_mes_pasado)}</div></div>
       <div class="k"><div class="l">Por cobrar este mes</div><div class="v ${num(r.vencido) > 0 ? 'wr' : ''}">${mxn(r.por_cobrar_mes)}</div>
@@ -361,10 +362,10 @@
       return `<button class="cli" data-k="${esc(c.key)}">
         <span class="dot ${c.salud}"></span>
         <div class="b">
-          <div class="t"><b>${esc(c.nombre)}</b><span>${mxn(c.cuota)}<small style="color:var(--dim);font-weight:500">/mes</small></span></div>
+          <div class="t"><b>${esc(c.nombre)}</b><span>${mxn(c.cuota)}<small style="color:var(--dim);font-weight:500">${c.promo ? ' promo' : '/mes'}</small></span></div>
           <div class="meta">${c.tipo === 'autoservicio' ? 'Autoservicio · ' + esc(u0.plan) : 'A la medida'}${us.length > 1 ? ' · ' + us.length + ' números' : ''} · ${cobro}</div>
           ${why ? `<div class="why ${c.salud}">${esc(why)}</div>` : ''}
-          <div class="tags"><span class="tag">${ent(in7)} mensajes en 7 días</span>
+          <div class="tags">${c.promo ? `<span class="tag a">Primer mes · después ${mxn(c.cuota_renovar)}/mes</span>` : ''}<span class="tag">${ent(in7)} mensajes en 7 días</span>
             ${c.salud === 'gris' ? '<span class="tag">Sin ingreso mientras esté suspendido</span>' : `<span class="tag ${num(c.margen_mes) >= 0 ? 'g' : 'r'}">Utilidad ${mxn(c.margen_mes)}</span>`}${riesgo}${extra}</div>
         </div></button>`;
     }).join('');
@@ -405,7 +406,7 @@
   function pintarCabecera() {
     $('sDot').className = 'dot ' + cli.salud;
     $('sNombre').textContent = cli.nombre;
-    $('sSub').textContent = (cli.tipo === 'autoservicio' ? 'Autoservicio · ' + cli.unidades[0].plan : 'A la medida') + ' · ' + SALUD[cli.salud] + ' · ' + mxn(cli.cuota) + '/mes';
+    $('sSub').textContent = (cli.tipo === 'autoservicio' ? 'Autoservicio · ' + cli.unidades[0].plan : 'A la medida') + ' · ' + SALUD[cli.salud] + ' · ' + (cli.promo ? mxn(cli.cuota) + ' primer mes, luego ' + mxn(cli.cuota_renovar) + '/mes' : mxn(cli.cuota) + '/mes');
     $('sTabs').innerHTML = TABS.filter(([k]) => k !== 'usuarios' || (det && det.usuarios && det.usuarios.length) || !det).map(([k, t]) => `<button class="tab ${tab === k ? 'on' : ''}" data-t="${k}">${t}</button>`).join('');
     $('sTabs').querySelectorAll('.tab').forEach(b => b.onclick = () => { tab = b.dataset.t; pintarCabecera(); pintarTab(); $('sBody').scrollTop = 0; });
   }
@@ -429,7 +430,7 @@
     const razonesR = [...new Set(us.flatMap(u => (u.riesgo && u.riesgo.razones) || []))];
     return `
       <div class="grid2 c4">
-        <div class="k"><div class="l">Paga</div><div class="v">${mxn(cli.cuota)}</div><div class="s">${cli.tipo === 'autoservicio' ? 'Stripe' : esc(us[0].forma_pago || 'transferencia')}</div></div>
+        <div class="k"><div class="l">${cli.promo ? 'Paga este mes (promo)' : 'Paga'}</div><div class="v">${mxn(cli.cuota)}</div><div class="s">${cli.promo ? 'Al renovar ' + mxn(cli.cuota_renovar) + ' · ' : ''}${cli.tipo === 'autoservicio' ? 'Stripe' : esc(us[0].forma_pago || 'transferencia')}</div></div>
         <div class="k"><div class="l">Utilidad del mes</div>${cli.salud === 'gris' ? '<div class="v">—</div><div class="s">Sin ingreso mientras esté suspendido</div>' : `<div class="v ${num(cli.margen_mes) >= 0 ? 'pos' : 'neg'}">${mxn(cli.margen_mes)}</div><div class="s">Costos ${mxn(cli.costo_mes)}</div>`}</div>
         <div class="k"><div class="l">Mensajes 7 días</div><div class="v">${ent(us.reduce((a, u) => a + num(u.uso.in_7d), 0))}</div><div class="s">semana anterior ${ent(us.reduce((a, u) => a + num(u.uso.in_prev7d), 0))}</div></div>
         <div class="k"><div class="l">Riesgo de irse</div><div class="v ${riesgo >= 60 ? 'neg' : riesgo >= 30 ? 'wr' : 'pos'}">${riesgo >= 60 ? 'Alto' : riesgo >= 30 ? 'Medio' : 'Bajo'}</div><div class="s">${riesgo} de 100</div></div>
@@ -505,7 +506,8 @@
     return `
       <div class="box"><h3>Membresía</h3>
         ${kv('Tipo', manual ? 'A la medida' : 'Autoservicio · plan ' + esc(u0.plan))}
-        ${kv('Cuota mensual', mxn(cli.cuota) + (us.length > 1 ? ' <small class="meta">(' + us.map(u => esc(u.nombre) + ' ' + mxn(u.cuota)).join(' · ') + ')</small>' : ''))}
+        ${cli.promo ? kv('Este mes (promoción)', mxn(cli.cuota)) + kv('Al renovar', mxn(cli.cuota_renovar) + '/mes') : ''}
+        ${cli.promo ? '' : kv('Cuota mensual', mxn(cli.cuota) + (us.length > 1 ? ' <small class="meta">(' + us.map(u => esc(u.nombre) + ' ' + mxn(u.cuota)).join(' · ') + ')</small>' : ''))}
         ${kv('Forma de pago', manual ? esc(u0.forma_pago || 'transferencia') : 'Stripe (automático)')}
         ${kv(manual ? 'Próximo cobro' : 'Renueva', cli.proximo ? fecha(cli.proximo) + (dc < 0 ? ' <span class="neg">(vencido ' + (-dc) + ' d)</span>' : dc <= 3 ? ' <span class="wr">(' + (dc === 0 ? 'hoy' : 'en ' + dc + ' d') + ')</span>' : '') : '—')}
         ${manual ? kv('Suspensión automática', u0.auto_suspender ? 'Sí, ' + u0.dias_gracia + ' días después del vencimiento' : 'No') : kv('Si falla la tarjeta', 'Stripe reintenta y se suspende al vencer la gracia')}
