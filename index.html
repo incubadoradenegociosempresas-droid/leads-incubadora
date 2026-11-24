@@ -2993,6 +2993,11 @@
     excluido:    { t: 'Excluido (salud)', g: 'excluidos' },
     cancelado:   { t: 'Canceló',          g: 'cancelados' }
   };
+  // 24-nov-2026: semana de prueba / membresía sin renovación automática que ya venció (o vence hoy y aún no corre el proceso)
+  function fitVencio(l) {
+    if (l.estado === 'cancelado' && l.vencido_at) return true;
+    return l.estado === 'activo' && !!l.vigente_hasta && new Date(l.vigente_hasta + 'T23:59:59') < new Date();
+  }
   const FIT_GRUPOS = [
     ['todos','Todos'], ['prospectos','Prospectos'], ['porpagar','Por pagar'], ['pagados','Pagó sin plan'],
     ['activos','Activos'], ['fallidos','Pago fallido'], ['excluidos','Excluidos'], ['cancelados','Cancelados'],
@@ -3000,12 +3005,13 @@
   ];
   const FIT_PIPE = [
     ['nuevo','Nuevo'], ['en_conversacion','En conversación'], ['interesado','Interesado'], ['liga_enviada','Liga de pago enviada'],
-    ['pago','Pagó'], ['cliente','Cliente activo'], ['no_interesa','No le interesa'], ['perdido','Perdido']
+    ['pago','Pagó'], ['cliente','Cliente activo'], ['vencio','Venció · recuperar'], ['no_interesa','No le interesa'], ['perdido','Perdido']
   ];
   const FIT_PIPE_TXT = Object.fromEntries(FIT_PIPE);
   // Etapa automática según lo que ya pasó; si Jorge la cambia a mano se respeta (salvo pagos, que mandan)
   function fitEtapa(l) {
     if (['pagado'].includes(l.estado)) return 'pago';
+    if (fitVencio(l)) return l.pipeline && !['cliente','pago'].includes(l.pipeline) ? l.pipeline : 'vencio';
     if (['activo','pago_fallido'].includes(l.estado)) return 'cliente';
     if (l.estado === 'excluido') return 'perdido';
     if (l.pipeline) return l.pipeline;
@@ -3021,6 +3027,7 @@
     if (g === 'seg24') return (l.seg24_enviados || 0) > 0 && l.ultimo_rol !== 'cliente';
     if (g === 'pausados') return !!l.seguimiento_pausado;
     if (g === 'menores') return l.excluido_motivo === 'menor de 18';
+    if (fitVencio(l)) return g === 'cancelados';
     return (FIT_ESTADOS[l.estado] || {}).g === g;
   }
   let fitLeads = [];
@@ -3101,8 +3108,8 @@
     FIT_GRUPOS.forEach(([k]) => { cuenta[k] = base.filter(l => fitEnGrupo(l, k)).length; });
 
     // KPIs: ingreso mensual recurrente estimado y conversión
-    const activos = base.filter(l => ['activo','pagado','pago_fallido'].includes(l.estado));
-    const mrr = activos.reduce((s, l) => s + (l.plan === 'trimestral' ? 599 / 3 : 249), 0);
+    const activos = base.filter(l => ['activo','pagado','pago_fallido'].includes(l.estado) && !fitVencio(l));
+    const mrr = activos.reduce((s, l) => s + (l.plan === 'semana' ? 0 : l.plan === 'trimestral' ? 599 / 3 : 249), 0);
     const pagaron = base.filter(l => l.pagado_at).length;
     const conv = base.length ? Math.round(pagaron * 100 / base.length) : 0;
     const hoy = base.filter(l => l.ultimo_entrante_at && (Date.now() - new Date(l.ultimo_entrante_at).getTime()) < 86400000).length;
@@ -3131,7 +3138,7 @@
   }
 
   function fitTarjeta(l, idx) {
-    const est = l.excluido_motivo === 'menor de 18' ? { t: 'Menor de edad' } : (FIT_ESTADOS[l.estado] || { t: l.estado });
+    const est = l.excluido_motivo === 'menor de 18' ? { t: 'Menor de edad' } : fitVencio(l) ? { t: 'Venció' } : (FIT_ESTADOS[l.estado] || { t: l.estado });
     const p = l.perfil || {};
     const datos = [];
     if (p.edad) datos.push(`<b>${escapeHtml(String(p.edad))}</b> años`);
@@ -3143,13 +3150,14 @@
     if (p.dias_semana) datos.push(`${escapeHtml(String(p.dias_semana))} días/sem`);
     if (p.lugar) datos.push(escapeHtml(String(p.lugar)));
     const membresia = [];
-    if (l.plan) membresia.push(`Plan <b>${l.plan === 'trimestral' ? 'trimestral $599' : 'mensual $249'}</b>`);
-    if (l.vigente_hasta) membresia.push(`vigente hasta <b>${new Date(l.vigente_hasta + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}</b>`);
+    if (l.plan) membresia.push(`Plan <b>${l.plan === 'semana' ? 'semana de prueba $49' : l.plan === 'trimestral' ? 'trimestral $599' : 'mensual $249'}</b>`);
+    if (l.vigente_hasta) membresia.push(`${fitVencio(l) ? 'venció el' : 'vigente hasta'} <b>${new Date(l.vigente_hasta + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}</b>`);
     if (l.semanas_entregadas) membresia.push(`<b>${l.semanas_entregadas}</b> semana${l.semanas_entregadas === 1 ? '' : 's'} entregada${l.semanas_entregadas === 1 ? '' : 's'}`);
     if (l.correo) membresia.push(escapeHtml(l.correo));
     let alerta = '';
     if (l.excluido_motivo === 'menor de 18') alerta = `🧒 Menor de edad: se le dieron recomendaciones generales y se cerró. No se le da seguimiento.${l.pagado_at ? ' · YA PAGÓ: reembolsar en Stripe' : ''}`;
     else if (l.estado === 'excluido') alerta = `⚠️ Excluido: ${escapeHtml(l.excluido_motivo || '')}${l.pagado_at ? ' · YA PAGÓ: reembolsar en Stripe' : ''}`;
+    else if (fitVencio(l)) alerta = `⌛ ${l.plan === 'semana' ? 'Su semana de prueba' : 'Su membresía'} venció y no renovó. ${l.recuperar_enviados ? `Vale ya le escribió para que siga (${l.recuperar_enviados} de 2 intentos).` : 'Vale le escribe en la siguiente corrida (cada 2 h, 9 a 19 h).'}`;
     else if (l.estado === 'pago_fallido') alerta = '⚠️ Su cobro falló: Vale ya le pidió actualizar su tarjeta';
     else if (l.estado === 'pagado') alerta = '⏳ Pagó pero le faltan datos para su primer plan';
     else if (l.checkin_pendiente) alerta = '⏳ Esperando su check-in semanal (peso y enfoque)';
@@ -3158,7 +3166,7 @@
       <div class="fit-top">
         <div><div class="fit-nom">${escapeHtml(l.nombre || 'Sin nombre')}${l.es_prueba ? ' · prueba' : ''}</div>
         <div class="fit-tel">${escapeHtml(l.telefono || '')} · escribió ${tiempoRelativo(l.ultimo_cliente || l.ultima_actividad)}</div></div>
-        <span class="fit-badge fb-${escapeHtml(l.estado || '')}">${escapeHtml(est.t || '')}</span>
+        <span class="fit-badge fb-${escapeHtml(fitVencio(l) ? 'cancelado' : (l.estado || ''))}">${escapeHtml(est.t || '')}</span>
       </div>
       ${datos.length ? `<div class="fit-datos">${datos.join(' · ')}</div>` : ''}
       ${membresia.length ? `<div class="fit-datos">${membresia.join(' · ')}</div>` : ''}
