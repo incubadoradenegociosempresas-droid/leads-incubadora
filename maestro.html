@@ -386,7 +386,7 @@
   $('bRefrescar').onclick = async () => { $('bRefrescar').innerHTML = '<span class="spin"></span>'; try { await cargar(); if (cli) await cargarDetalle(); n8nAlDia(true); } catch (e) { toast(e.message); } $('bRefrescar').textContent = '↻'; };
 
   // ===== Detalle =====
-  const TABS = [['resumen', 'Resumen'], ['chats', 'Pláticas'], ['citas', 'Citas y pedidos'], ['avisos', 'Avisos al dueño'], ['cobranza', 'Cobranza'], ['uso', 'Uso y costos'], ['alta', 'Proceso de alta'], ['control', 'Controles'], ['usuarios', 'Usuarios'], ['negocio', 'Su negocio'], ['bitacora', 'Bitácora']];
+  const TABS = [['resumen', 'Resumen'], ['chats', 'Pláticas'], ['citas', 'Citas y pedidos'], ['avisos', 'Avisos al dueño'], ['cobranza', 'Cobranza'], ['uso', 'Uso y costos'], ['alta', 'Proceso de alta'], ['control', 'Controles'], ['usuarios', 'Usuarios'], ['negocio', 'Su negocio'], ['envios', 'Envíos'], ['bitacora', 'Bitácora']];
   async function abrir(key) {
     cli = D.clientes.find(c => c.key === key); if (!cli) return;
     tab = 'resumen'; unidadSel = null; det = null;
@@ -415,7 +415,7 @@
 
   function pintarTab() {
     if (!det) return;
-    const f = { resumen: tResumen, chats: tChats, citas: tCitas, avisos: tAvisos, cobranza: tCobranza, uso: tUso, alta: tAlta, control: tControl, usuarios: tUsuarios, negocio: tNegocio, bitacora: tBitacora }[tab];
+    const f = { resumen: tResumen, chats: tChats, citas: tCitas, avisos: tAvisos, cobranza: tCobranza, uso: tUso, alta: tAlta, control: tControl, usuarios: tUsuarios, negocio: tNegocio, envios: tEnvios, bitacora: tBitacora }[tab];
     $('sIn').innerHTML = f();
     enlazar();
   }
@@ -620,6 +620,105 @@
     if (!b.length) return '<div class="empty">Sin movimientos registrados todavía.</div>';
     return `<div class="box"><h3>Movimientos</h3>${b.map(x => `<div class="item" style="cursor:default"><div class="t"><b>${esc(T[x.accion] || x.accion)}</b><small>${fechaHora(x.creado)}</small></div>
       <p>${x.detalle && x.detalle.monto ? mxn(x.detalle.monto) + ' · ' : ''}${esc(x.quien || 'sistema')}</p></div>`).join('')}</div>`;
+  }
+
+
+  // ===== Envíos masivos por plantilla (25-nov-2026) =====
+  const EST_TPL = { APPROVED: ['Aprobada', 'g'], PENDING: ['En revisión de Meta', 'a'], REJECTED: ['Rechazada', 'r'], PAUSED: ['Pausada por Meta', 'r'], DISABLED: ['Desactivada', 'r'], IN_APPEAL: ['En apelación', 'a'] };
+  function tEnvios() { setTimeout(cargarEnvios, 0); return '<div id="envBox"><div class="empty"><span class="spin"></span> Cargando envíos…</div></div>'; }
+  async function cargarEnvios() {
+    const box = $('envBox'); if (!box) return;
+    try {
+      const us = unidades().filter(u => u.conectado);
+      if (!us.length) { box.innerHTML = '<div class="empty">Este cliente no tiene WhatsApp conectado.</div>'; return; }
+      const datos = await Promise.all(us.map(u => rpc('maestro_envios', { p_tenant: u.id }).then(d => [u, d])));
+      if (!$('envBox')) return;
+      box.innerHTML = datos.map(([u, d]) => pintarEnviosUnidad(u, d)).join('');
+      enlazarEnvios();
+    } catch (e) { box.innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+  }
+  function barra(n, tot) { const p = tot ? Math.round(100 * n / tot) : 0; return `<div style="height:8px;border-radius:6px;background:var(--card2);overflow:hidden;margin-top:6px"><i style="display:block;height:100%;width:${p}%;background:var(--accent)"></i></div>`; }
+  function pintarEnviosUnidad(u, d) {
+    const tpl = d.plantillas || [];
+    const envs = d.envios || [];
+    return `
+      <div class="box"><h3>${esc(u.nombre)} · Plantillas en Meta</h3>
+        ${tpl.length ? tpl.map(p => { const e = EST_TPL[p.s] || [p.s || ('error ' + (p.error || '')), 'r']; return `<div class="kv"><span>${esc(p.n || '—')}<small class="meta"> · ${esc(p.c || '')}</small></span><span class="tag ${e[1]}">${esc(e[0])}</span></div>`; }).join('') : '<div class="empty">Sin plantillas registradas.</div>'}
+        <div class="meta" style="margin-top:8px">Revisado ${hace(d.revisado)} · Límite ${esc(String(d.limite || '').replace('TIER_', '') || '—')} contactos/día · usados en 24 h: ${ent(d.usados_24h)}</div>
+        <div class="btns" style="margin-top:10px"><button class="btn" data-revtpl="${esc(u.id)}">Revisar en Meta ahora</button></div>
+      </div>
+      ${envs.length ? envs.map(e => pintarEnvio(u, e)).join('') : '<div class="box"><div class="empty">Sin envíos creados.</div></div>'}
+      <div class="box"><h3>Bajas (pidieron no recibir más)</h3>
+        <div class="meta">${ent(d.bajas_total)} contactos dados de baja. No vuelven a recibir envíos.</div>
+        ${(d.bajas || []).map(b => `<div class="kv"><span>${esc(b.nombre || b.telefono)}<small class="meta"> · ${esc(b.telefono)}</small></span><span class="meta">${fechaHora(b.baja_en)}</span></div>`).join('')}
+      </div>`;
+  }
+  function pintarEnvio(u, e) {
+    const c = e.cuentas || {}; const tot = num(e.total);
+    const salieron = num(c.enviado) + num(c.entregado) + num(c.leido);
+    const ON = e.estado === 'activo';
+    return `<div class="box"><h3>${esc(e.nombre)}</h3>
+      <div class="tags"><span class="tag ${ON ? 'g' : e.estado === 'terminado' ? '' : 'a'}">${ON ? 'Activo' : e.estado === 'terminado' ? 'Terminado' : 'Pausado'}</span>
+        <span class="tag">${esc(e.plantilla)}</span>${e.nota_estado ? `<span class="tag">${esc(e.nota_estado)}</span>` : ''}</div>
+      <div class="meta" style="margin-top:6px">Manda de ${e.hora_ini} a ${e.hora_fin} h · hasta ${ent(e.tope_dia)} contactos en 24 h · empieza ${fechaHora(e.inicia_en)}${e.vence_en ? ' · vence ' + fechaHora(e.vence_en) : ''}</div>
+      <div class="grid2 c4" style="margin-top:10px">
+        <div class="k"><div class="l">Salieron</div><div class="v">${ent(salieron)}</div><div class="s">de ${ent(tot)} ${barra(salieron, tot)}</div></div>
+        <div class="k"><div class="l">Entregados</div><div class="v">${ent(num(c.entregado) + num(c.leido))}</div><div class="s">leídos ${ent(c.leido)}</div></div>
+        <div class="k"><div class="l">Respondieron</div><div class="v">${ent(e.respondieron)}</div><div class="s">bajas ${ent(e.bajas)}</div></div>
+        <div class="k"><div class="l">Fallidos</div><div class="v ${num(c.fallido) ? 'neg' : ''}">${ent(c.fallido)}</div><div class="s">pendientes ${ent(num(c.pendiente) + num(c.enviando))}</div></div>
+      </div>
+      ${(e.respuestas || []).length ? `<h3 style="margin-top:14px">Qué contestaron</h3>${e.respuestas.map(r => `<div class="kv"><span>${esc(r.r)}</span><span>${ent(r.n)}</span></div>`).join('')}` : ''}
+      ${(e.errores || []).length ? `<h3 style="margin-top:14px">Por qué fallaron</h3>${e.errores.map(r => `<div class="kv"><span>${esc(r.r)}</span><span>${ent(r.n)}</span></div>`).join('')}` : ''}
+      <div class="kv" style="margin-top:10px"><span>Imagen del encabezado</span><span>${e.imagen_url ? `<a href="${esc(e.imagen_url)}" target="_blank" rel="noopener">ver</a>` : '<b class="neg">falta</b>'}</span></div>
+      <div class="btns" style="margin-top:10px">
+        ${e.estado !== 'terminado' ? `<button class="btn ${ON ? 'danger' : 'okb'}" data-envest="${esc(e.id)}" data-on="${ON ? 0 : 1}">${ON ? 'Pausar' : 'Activar'}</button>` : ''}
+        <label class="btn" style="display:inline-flex;align-items:center">${e.imagen_url ? 'Cambiar imagen' : 'Subir imagen'}<input type="file" accept="image/jpeg,image/png" hidden data-envimg="${esc(e.id)}" data-tenant="${esc(u.id)}"></label>
+        <button class="btn" data-envprueba="${esc(e.id)}">Mandar prueba</button>
+      </div></div>`;
+  }
+  function enlazarEnvios() {
+    const B = $('envBox'); if (!B) return;
+    B.querySelectorAll('[data-revtpl]').forEach(b => b.onclick = async () => {
+      b.disabled = true; b.innerHTML = '<span class="spin"></span> Preguntando a Meta…';
+      try { await rpc('maestro_revisar_plantillas', { p_tenant: b.dataset.revtpl }); await new Promise(r => setTimeout(r, 5000)); await rpc('maestro_revisar_plantillas', { p_tenant: null }); toast('Plantillas actualizadas'); }
+      catch (e) { toast(e.message); }
+      cargarEnvios();
+    });
+    B.querySelectorAll('[data-envest]').forEach(b => b.onclick = async () => {
+      const on = b.dataset.on === '1';
+      if (!(await preguntar(on ? '¿Activar este envío? Empieza a mandar en cuanto la plantilla esté aprobada y esté dentro del horario.' : '¿Pausar este envío?'))) return;
+      try { await rpc('maestro_envio_estado', { p_envio: b.dataset.envest, p_activo: on }); toast(on ? 'Envío activado' : 'Envío pausado'); } catch (e) { toast(e.message); }
+      cargarEnvios();
+    });
+    B.querySelectorAll('[data-envimg]').forEach(inp => inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      if (f.size > 5 * 1024 * 1024) { toast('La imagen pesa más de 5 MB'); return; }
+      try {
+        const ruta = 'envios/' + inp.dataset.tenant + '/' + inp.dataset.envimg + '-' + Date.now() + (f.type === 'image/png' ? '.png' : '.jpg');
+        const up = await sb.storage.from('anuncios').upload(ruta, f, { contentType: f.type, upsert: false });
+        if (up.error) throw new Error(up.error.message);
+        const url = sb.storage.from('anuncios').getPublicUrl(ruta).data.publicUrl;
+        await rpc('maestro_envio_imagen', { p_envio: inp.dataset.envimg, p_url: url });
+        toast('Imagen guardada');
+      } catch (e) { toast(e.message); }
+      cargarEnvios();
+    });
+    B.querySelectorAll('[data-envprueba]').forEach(b => b.onclick = () => {
+      abrirModal('Mandar prueba', `<form id="fPrueba"><label class="f">WhatsApp donde quieres recibirla (10 dígitos)</label><input class="inp" name="tel" inputmode="tel" placeholder="477 273 2496">
+        <label class="f">Saludo ({{1}})</label><input class="inp" name="saludo" value="Jorge">
+        <div class="note" style="margin-top:8px">Se manda ya, aunque esté fuera de horario. Necesita la plantilla aprobada y la imagen. Cuenta para el límite diario.</div>
+        <button class="btn pri" style="width:100%;margin-top:14px" type="submit">Mandar</button><div id="prMsg"></div></form>`);
+      $('fPrueba').onsubmit = async ev => {
+        ev.preventDefault(); const f = ev.target; const tel = String(f.tel.value).replace(/\D/g, '');
+        if (tel.length !== 10) { $('prMsg').innerHTML = '<div class="msg err">Escribe 10 dígitos.</div>'; return; }
+        $('prMsg').innerHTML = '<div class="msg"><span class="spin"></span> Mandando…</div>';
+        try {
+          const req = await rpc('maestro_envio_prueba', { p_envio: b.dataset.envprueba, p_telefono: '52' + tel, p_saludo: f.saludo.value || 'colega' });
+          let r = null; for (let i = 0; i < 8 && !(r && r.listo); i++) { await new Promise(x => setTimeout(x, 1500)); r = await rpc('maestro_envio_prueba_resultado', { p_req: req }); }
+          $('prMsg').innerHTML = r && r.ok ? '<div class="msg ok">Meta la aceptó. Revisa el WhatsApp.</div>' : '<div class="msg err">' + esc((r && r.error) || 'Meta no contestó a tiempo') + '</div>';
+        } catch (e) { $('prMsg').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+      };
+    });
   }
 
   // ===== Acciones =====
