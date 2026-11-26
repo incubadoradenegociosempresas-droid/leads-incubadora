@@ -443,7 +443,7 @@
           ${!(u.rojos || []).length && !(u.amarillos || []).length ? `<div class="reason"><span class="dot ${u.salud === 'gris' ? '' : 'verde'}"></span><span>${u.salud === 'gris' ? esc(u.grupo_motivo || ESTADOS[u.estado]) : 'Todo funciona bien'}</span></div>` : ''}
           <div class="tags">
             <span class="tag ${u.conectado ? 'g' : 'r'}">${u.conectado ? 'WhatsApp conectado' : 'Sin WhatsApp'}</span>
-            ${u.meta && u.meta.calidad ? `<span class="tag ${u.meta.calidad === 'GREEN' ? 'g' : u.meta.calidad === 'YELLOW' ? 'a' : 'r'}">Calidad ${u.meta.calidad === 'GREEN' ? 'verde' : u.meta.calidad === 'YELLOW' ? 'amarilla' : 'roja'}</span>` : ''}
+            ${u.meta && u.meta.calidad ? (({ GREEN: ['g', 'Calidad verde'], YELLOW: ['a', 'Calidad amarilla'], RED: ['r', 'Calidad roja'] })[u.meta.calidad] || ['', 'Calidad sin calificar aún']).reduce((c, t) => `<span class="tag ${c}">${t}</span>`) : ''}
             ${u.meta && u.meta.limite ? `<span class="tag">Límite ${esc(String(u.meta.limite).replace('TIER_', ''))}/día</span>` : ''}
             ${u.meta && u.meta.plantillas ? `<span class="tag">${u.meta.plantillas_ok}/${u.meta.plantillas} plantillas aprobadas</span>` : ''}
             <span class="tag">Último mensaje ${hace(u.uso.ultimo_in)}</span>
