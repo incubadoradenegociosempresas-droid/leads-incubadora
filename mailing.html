@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Mailing · CRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--az:#0a6cff;--ng:#0b1220;--gr:#6b7280;--bd:#e5e7eb;--fn:#f1f4f8;--ok:#0f9d58;--mal:#d93025}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--fn);color:var(--ng);font-size:15px}
+header{background:var(--ng);color:#fff;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20}
+header b{font-size:16px;letter-spacing:.5px}header .sp{flex:1}
+header button{background:transparent;color:#cbd5e1;border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:13px}
+nav{display:flex;background:#fff;border-bottom:1px solid var(--bd);position:sticky;top:52px;z-index:15;overflow-x:auto}
+nav button{flex:1;min-width:96px;background:none;border:0;padding:13px 8px;font-size:15px;color:var(--gr);border-bottom:3px solid transparent;touch-action:manipulation}
+nav button.on{color:var(--az);border-color:var(--az);font-weight:600}
+main{max-width:980px;margin:0 auto;padding:16px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0 0 8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.kpi b{display:block;font-size:26px}.kpi span{color:var(--gr);font-size:13px}
+label{display:block;font-size:13px;color:var(--gr);margin:10px 0 4px}
+input,textarea,select{width:100%;font-size:16px;padding:11px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:var(--ng);font-family:inherit}
+textarea{min-height:170px;resize:vertical}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--az);color:#fff;border:0;border-radius:8px;padding:12px 16px;font-size:15px;font-weight:600;cursor:pointer;touch-action:manipulation;min-height:44px}
+.btn.sec{background:#fff;color:var(--ng);border:1px solid #cbd5e1}.btn.peligro{background:var(--mal)}.btn.ok{background:var(--ok)}
+.btn:disabled{opacity:.5;cursor:default}
+.fila{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fila>*{flex:1 1 auto}
+.chip{display:inline-block;font-size:12px;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;white-space:nowrap}
+.chip.activo{background:#e6f4ea;color:#137333}.chip.baja,.chip.queja{background:#fce8e6;color:#a50e0e}.chip.rebotado,.chip.invalido{background:#fef7e0;color:#8a5300}
+.chip.borrador{background:#f1f3f4;color:#3c4043}.chip.en_cola,.chip.enviando{background:#e8f0fe;color:#1967d2}.chip.enviada{background:#e6f4ea;color:#137333}.chip.cancelada{background:#fce8e6;color:#a50e0e}
+.lista .it{padding:12px 0;border-bottom:1px solid var(--bd);display:flex;gap:10px;align-items:flex-start}
+.lista .it:last-child{border:0}.lista .it .t{flex:1;min-width:0}.lista .it .t div{overflow:hidden;text-overflow:ellipsis}
+.gris{color:var(--gr);font-size:13px}
+.aviso{background:#fef7e0;color:#5f4300;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px;line-height:1.45}
+.aviso.ok{background:#e6f4ea;color:#0d5c2a}.aviso.mal{background:#fce8e6;color:#8c1d18}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}nav{top:52px}}
+.prev{border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:#f1f4f8}
+.prev iframe{width:100%;height:640px;border:0;display:block;background:#f1f4f8}
+.oculto{display:none!important}
+#login{max-width:380px;margin:60px auto}
+.drop{border:2px dashed #cbd5e1;border-radius:12px;padding:22px;text-align:center;color:var(--gr);cursor:pointer}
+.drop.sobre{border-color:var(--az);background:#e8f0fe}
+table.mapa{width:100%;border-collapse:collapse;font-size:14px}table.mapa td{padding:6px 4px;border-bottom:1px solid var(--bd)}
+.barra{height:8px;background:#eef2f7;border-radius:99px;overflow:hidden}.barra i{display:block;height:100%;background:var(--az)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ng);color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;z-index:99;max-width:92vw;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.ver{opacity:1}
+@media (hover:hover){.btn:hover{filter:brightness(1.06)}nav button:hover{color:var(--ng)}}
+</style></head><body>
+
+<div id="login" class="card">
+  <h2>Entrar a Mailing</h2>
+  <p class="gris">Usa el mismo correo y contraseña de tu CRM.</p>
+  <label>Correo</label><input id="lcorreo" type="email" autocomplete="username" inputmode="email">
+  <label>Contraseña</label><input id="lpass" type="password" autocomplete="current-password">
+  <div style="margin-top:14px"><button class="btn" id="lbtn" style="width:100%">Entrar</button></div>
+  <p id="lerr" class="gris" style="color:var(--mal)"></p>
+</div>
+
+<div id="app" class="oculto">
+<header><b id="hnegocio">Mailing</b><span class="sp"></span><select id="selNeg" class="oculto" style="width:auto;font-size:14px;padding:6px"></select><button id="salir">Salir</button></header>
+<nav>
+  <button data-v="inicio" class="on">Inicio</button>
+  <button data-v="contactos">Contactos</button>
+  <button data-v="campanas">Campañas</button>
+</nav>
+<main>
+  <!-- INICIO -->
+  <section id="v-inicio">
+    <div id="avisoCfg"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="card" style="margin-top:14px"><h2>Últimas campañas</h2><div id="ultimas" class="lista"></div>
+      <button class="btn" id="nuevaDesdeInicio" style="margin-top:10px">+ Nueva campaña</button></div>
+  </section>
+
+  <!-- CONTACTOS -->
+  <section id="v-contactos" class="oculto">
+    <div class="card">
+      <h2>Subir correos</h2>
+      <p class="gris" style="margin-top:0">Excel (.xlsx) o CSV. Necesita una columna con el correo; nombre, empresa, ciudad y teléfono son opcionales. Los repetidos y los mal escritos se descartan solos, y quien ya se dio de baja no se reactiva.</p>
+      <div class="drop" id="drop">Toca para elegir el archivo<br><span class="gris">o arrástralo aquí</span></div>
+      <input type="file" id="archivo" accept=".csv,.xlsx,.xls,.txt" class="oculto">
+      <div id="mapeo" class="oculto" style="margin-top:12px">
+        <h3 id="mapeoTit"></h3>
+        <table class="mapa" id="mapaTabla"></table>
+        <label>Etiqueta para este grupo (por ejemplo, la expo de donde salieron)</label>
+        <input id="etiqueta" placeholder="Ej. Expo Textil León 2026">
+        <div class="fila" style="margin-top:12px"><button class="btn" id="importar">Importar</button><button class="btn sec" id="cancelarImp">Cancelar</button></div>
+      </div>
+      <div id="resImp"></div>
+    </div>
+    <div class="card">
+      <div class="fila"><input id="buscar" placeholder="Buscar correo, nombre o empresa" style="flex:3 1 200px">
+        <select id="filtroEstado" style="flex:1 1 120px"><option value="">Todos</option><option value="activo">Activos</option><option value="baja">Bajas</option><option value="rebotado">Rebotados</option><option value="queja">Spam</option></select></div>
+      <p class="gris" id="cuentaCont" style="margin:10px 0 0"></p>
+      <div class="lista" id="listaCont"></div>
+      <button class="btn sec oculto" id="masCont" style="width:100%;margin-top:8px">Ver más</button>
+    </div>
+  </section>
+
+  <!-- CAMPAÑAS -->
+  <section id="v-campanas" class="oculto">
+    <div id="listaCampWrap">
+      <div class="fila" style="margin-bottom:12px"><button class="btn" id="nuevaCamp" style="flex:0 0 auto">+ Nueva campaña</button></div>
+      <div class="card lista" id="listaCamp"></div>
+    </div>
+
+    <div id="editor" class="oculto">
+      <div class="fila" style="margin-bottom:12px"><button class="btn sec" id="volver" style="flex:0 0 auto">← Campañas</button><span id="edEstado"></span></div>
+      <div id="reporte"></div>
+      <div class="grid2">
+        <div class="card" id="formCamp">
+          <label>Nombre interno</label><input id="cNombre" placeholder="Ej. Calandras seminuevas – semana 49">
+          <label>Asunto del correo</label><input id="cAsunto" maxlength="120" placeholder="Ej. {{nombre}}, calandras con entrega inmediata">
+          <label>Texto de vista previa (lo que se ve junto al asunto)</label><input id="cPre" maxlength="140">
+          <label>Título</label><input id="cTitulo">
+          <label>Imagen (liga a una foto, opcional)</label><input id="cImg" type="url" placeholder="https://…">
+          <label>Mensaje</label><textarea id="cCuerpo" placeholder="Hola {{nombre}},&#10;&#10;Escribe aquí. Deja un renglón vacío entre párrafos. **Así** se pone negrita."></textarea>
+          <p class="gris" style="margin:4px 0 0">{{nombre}} se cambia por el nombre de cada persona.</p>
+          <div class="fila"><div><label>Texto del botón</label><input id="cBtn" placeholder="Escríbenos por WhatsApp"></div>
+            <div><label>Liga del botón</label><input id="cUrl" type="url" placeholder="https://wa.me/52…"></div></div>
+          <label>¿A quién?</label><select id="cSeg"></select>
+          <p class="gris" id="cuantos"></p>
+          <div class="fila" style="margin-top:8px"><button class="btn sec" id="guardar">Guardar</button></div>
+          <hr style="border:0;border-top:1px solid var(--bd);margin:16px 0">
+          <h3>1. Mándate una prueba</h3>
+          <div class="fila"><input id="pruebaEmail" type="email" placeholder="tu@correo.com" style="flex:3 1 180px"><button class="btn sec" id="prueba" style="flex:1 1 auto">Enviar prueba</button></div>
+          <div id="bloqueEnvio"><h3 style="margin-top:16px">2. Envía la campaña</h3>
+          <label>¿Cuándo?</label></div>
+          <select id="cuando"><option value="ya">Ahora</option><option value="prog">Programar fecha y hora</option></select>
+          <input id="fecha" type="datetime-local" class="oculto" style="margin-top:8px">
+          <div class="fila" style="margin-top:10px"><button class="btn ok" id="enviar">Enviar campaña</button></div>
+        </div>
+        <div><div class="prev"><iframe id="prev" title="Vista previa"></iframe></div><p class="gris" style="text-align:center">Vista previa</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+<div id="toast"></div>
+
+<script>
+const SB = supabase.createClient('https://ytxnmscxyjttqftmznqj.supabase.co','sb_publishable_T3LJo-8teMIkimAtHitGWA_XKjzDBP5');
+let T = null, NEG = '', CFG = {}, RES = {}, camp = null, contOff = 0, filas = [], columnas = [];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = d => d ? new Date(d).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+const num = n => Number(n||0).toLocaleString('es-MX');
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('ver');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('ver'),3200)}
+async function rpc(f,a){const {data,error}=await SB.rpc(f,a);if(error){toast(error.message);throw error}return data}
+
+// ---------- sesión
+$('lbtn').onclick = async () => {
+  $('lerr').textContent=''; $('lbtn').disabled=true;
+  const {error} = await SB.auth.signInWithPassword({email:$('lcorreo').value.trim(), password:$('lpass').value});
+  $('lbtn').disabled=false;
+  if (error) { $('lerr').textContent='Correo o contraseña incorrectos.'; return; }
+  arrancar();
+};
+$('lpass').addEventListener('keydown', e => { if (e.key==='Enter') $('lbtn').click(); });
+$('salir').onclick = async () => { await SB.auth.signOut(); location.reload(); };
+SB.auth.getSession().then(({data}) => { if (data.session) arrancar(); });
+
+async function arrancar(){
+  const negs = await rpc('mail_mis_negocios');
+  const conMail = negs.filter(n => n.mailing);
+  if (!conMail.length) { $('lerr').textContent = 'Tu cuenta no tiene mailing activado.'; await SB.auth.signOut(); return; }
+  $('login').classList.add('oculto'); $('app').classList.remove('oculto');
+  if (conMail.length > 1) { $('selNeg').classList.remove('oculto'); $('selNeg').innerHTML = conMail.map(n=>`<option value="${n.tenant_id}">${esc(n.nombre)}</option>`).join(''); $('selNeg').onchange = () => elegir($('selNeg').value, conMail); }
+  elegir(conMail[0].tenant_id, conMail);
+}
+function elegir(id, negs){ T=id; NEG=negs.find(n=>n.tenant_id===id).nombre; $('hnegocio').textContent='Mailing · '+NEG; ir('inicio'); }
+
+// ---------- navegación
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => ir(b.dataset.v));
+function ir(v){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+  ['inicio','contactos','campanas'].forEach(x=>$('v-'+x).classList.toggle('oculto', x!==v));
+  if (v==='inicio') cargarInicio();
+  if (v==='contactos') { contOff=0; cargarContactos(); }
+  if (v==='campanas') { $('editor').classList.add('oculto'); $('listaCampWrap').classList.remove('oculto'); cargarCampanas(); }
+  window.scrollTo(0,0);
+}
+
+// ---------- inicio
+async function cargarInicio(){
+  RES = await rpc('mail_resumen',{p_tenant:T}); CFG = RES.config || {};
+  $('avisoCfg').innerHTML = !CFG.activo
+    ? `<div class="aviso">Ya puedes subir tus correos y armar campañas. <b>El envío se activa en cuanto quede verificado el dominio de correo</b> (${esc(CFG.remitente||'')}). Mientras tanto puedes mandarte pruebas.</div>` : '';
+  $('kpis').innerHTML = [
+    ['Contactos activos', RES.activos], ['Dados de baja', RES.bajas], ['Rebotados', RES.rebotados], ['Enviados hoy', `${num(RES.enviados_hoy)} <span class="gris" style="font-size:13px">/ ${num(CFG.limite_diario)}</span>`]
+  ].map(([t,v])=>`<div class="kpi"><b>${typeof v==='number'?num(v):v}</b><span>${t}</span></div>`).join('');
+  const camps = await rpc('mail_campanas_lista',{p_tenant:T});
+  $('ultimas').innerHTML = camps.slice(0,5).map(filaCamp).join('') || '<p class="gris">Todavía no hay campañas.</p>';
+  enlazarCamps($('ultimas'), camps);
+}
+$('nuevaDesdeInicio').onclick = () => { ir('campanas'); abrirEditor(null); };
+
+// ---------- contactos
+let tBus; $('buscar').oninput = () => { clearTimeout(tBus); tBus=setTimeout(()=>{contOff=0;cargarContactos()},300); };
+$('filtroEstado').onchange = () => { contOff=0; cargarContactos(); };
+$('masCont').onclick = () => { contOff += 100; cargarContactos(true); };
+const nomEstado = {activo:'Activo',baja:'Se dio de baja',rebotado:'Rebotó',invalido:'Inválido',queja:'Lo marcó spam'};
+async function cargarContactos(agregar){
+  const d = await rpc('mail_contactos_lista',{p_tenant:T,p_buscar:$('buscar').value.trim()||null,p_estado:$('filtroEstado').value||null,p_limite:100,p_offset:contOff});
+  const total = d.length ? d[0].total : 0;
+  $('cuentaCont').textContent = num(total) + ' contactos';
+  const html = d.map(c=>`<div class="it"><div class="t"><div><b>${esc(c.nombre||c.email)}</b></div><div class="gris">${[c.nombre?c.email:'',c.empresa,c.ciudad].filter(Boolean).map(esc).join(' · ')}</div>${c.etiqueta?`<span class="chip">${esc(c.etiqueta)}</span>`:''}</div>
+    <div style="text-align:right"><span class="chip ${c.estado}">${nomEstado[c.estado]||c.estado}</span>${c.estado==='activo'?`<div><button class="btn sec" style="min-height:32px;padding:4px 10px;margin-top:6px;font-size:13px" data-baja="${c.id}">Quitar</button></div>`:''}</div></div>`).join('');
+  $('listaCont').innerHTML = agregar ? $('listaCont').innerHTML + html : (html || '<p class="gris">Sin contactos. Sube tu archivo arriba.</p>');
+  $('masCont').classList.toggle('oculto', contOff + 100 >= total);
+  $('listaCont').querySelectorAll('[data-baja]').forEach(b => b.onclick = async () => { if(!confirm('¿Quitar este contacto de los envíos?'))return; await rpc('mail_contacto_estado',{p_contacto:b.dataset.baja,p_estado:'baja'}); toast('Contacto quitado'); contOff=0; cargarContactos(); });
+}
+
+// importar
+const drop=$('drop');
+drop.onclick=()=>$('archivo').click();
+['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('sobre')}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('sobre')}));
+drop.addEventListener('drop',ev=>{if(ev.dataTransfer.files[0])leer(ev.dataTransfer.files[0])});
+$('archivo').onchange=e=>{if(e.target.files[0])leer(e.target.files[0]);e.target.value=''};
+const CAMPOS={email:'Correo',nombre:'Nombre',empresa:'Empresa',ciudad:'Ciudad',telefono:'Teléfono'};
+const ADIV={email:/e-?mail|correo/i,nombre:/^nombre|name|contacto|cliente/i,empresa:/empresa|compa|negocio|raz[oó]n/i,ciudad:/ciudad|city|municipio|estado/i,telefono:/tel|cel|whats|m[oó]vil|phone/i};
+async function leer(f){
+  $('resImp').innerHTML='';
+  try{
+    const buf = await f.arrayBuffer();
+    let wb;
+    if (/\.(csv|txt)$/i.test(f.name)) {
+      // CSV: UTF-8 si se puede; si no, el formato de Excel en Windows (acentos)
+      let txt; try { txt = new TextDecoder('utf-8',{fatal:true}).decode(buf); } catch { txt = new TextDecoder('windows-1252').decode(buf); }
+      wb = XLSX.read(txt.replace(/^﻿/,''), {type:'string'});
+    } else wb = XLSX.read(buf, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    let datos = XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}).filter(r=>r.some(c=>String(c).trim()));
+    if(!datos.length){toast('El archivo está vacío');return}
+    // ¿la primera fila es encabezado?
+    const tieneEnc = !datos[0].some(c=>/@/.test(c));
+    columnas = tieneEnc ? datos[0].map((c,i)=>String(c).trim()||('Columna '+(i+1))) : datos[0].map((_,i)=>'Columna '+(i+1));
+    filas = tieneEnc ? datos.slice(1) : datos;
+    // adivinar mapeo: el correo es la columna con más "@"
+    const arrobas = columnas.map((_,i)=>filas.slice(0,200).filter(r=>/@/.test(r[i])).length);
+    const iMail = arrobas.indexOf(Math.max(...arrobas));
+    let h = '';
+    for (const [k,t] of Object.entries(CAMPOS)) {
+      let sel = k==='email' ? iMail : columnas.findIndex((c,i)=>i!==iMail && ADIV[k].test(c));
+      h += `<tr><td style="width:40%">${t}${k==='email'?' *':''}</td><td><select data-campo="${k}"><option value="-1">— No usar —</option>${columnas.map((c,i)=>`<option value="${i}" ${i===sel?'selected':''}>${esc(c)}${filas[0]?' · ej. '+esc(String(filas[0][i]||'').slice(0,30)):''}</option>`).join('')}</select></td></tr>`;
+    }
+    $('mapaTabla').innerHTML=h; $('mapeoTit').textContent=`${f.name}: ${num(filas.length)} filas`;
+    $('etiqueta').value = f.name.replace(/\.(csv|xlsx?|txt)$/i,'').replace(/[_-]+/g,' ').slice(0,60);
+    $('mapeo').classList.remove('oculto'); drop.classList.add('oculto');
+  }catch(e){toast('No se pudo leer el archivo: '+e.message)}
+}
+$('cancelarImp').onclick=()=>{$('mapeo').classList.add('oculto');drop.classList.remove('oculto');filas=[]};
+$('importar').onclick=async()=>{
+  const m={}; document.querySelectorAll('[data-campo]').forEach(s=>m[s.dataset.campo]=+s.value);
+  if(m.email<0){toast('Elige qué columna tiene el correo');return}
+  const regs = filas.map(r=>{const o={};for(const k in m) if(m[k]>=0) o[k]=String(r[m[k]]??'').trim(); return o});
+  $('importar').disabled=true; $('importar').textContent='Importando…';
+  let tot={nuevos:0,actualizados:0,invalidos:0,repetidos_en_archivo:0,ya_dados_de_baja:0};
+  try{
+    for(let i=0;i<regs.length;i+=2000){
+      const r = await rpc('mail_importar',{p_tenant:T,p_filas:regs.slice(i,i+2000),p_etiqueta:$('etiqueta').value.trim()||null});
+      for(const k in tot) tot[k]+=r[k]||0;
+      $('importar').textContent=`Importando… ${Math.min(i+2000,regs.length)}/${regs.length}`;
+    }
+    $('resImp').innerHTML=`<div class="aviso ok" style="margin-top:12px"><b>Listo.</b> ${num(tot.nuevos)} nuevos · ${num(tot.actualizados)} ya existían (se actualizaron) · ${num(tot.invalidos)} correos mal escritos descartados · ${num(tot.repetidos_en_archivo)} repetidos en el archivo${tot.ya_dados_de_baja?` · ${num(tot.ya_dados_de_baja)} ya se habían dado de baja y no se reactivan`:''}.</div>`;
+    $('mapeo').classList.add('oculto'); drop.classList.remove('oculto'); contOff=0; cargarContactos();
+  }finally{$('importar').disabled=false;$('importar').textContent='Importar'}
+};
+
+// ---------- campañas
+const nomCamp={borrador:'Borrador',en_cola:'Programada',enviando:'Enviándose',enviada:'Enviada',cancelada:'Cancelada'};
+const pct=(a,b)=>b?Math.round(a*100/b)+'%':'—';
+function filaCamp(c){
+  const st = c.total ? `${num(c.enviados)}/${num(c.total)} enviados · ${pct(c.abiertos,c.enviados)} abrieron · ${pct(c.clics,c.enviados)} clic` : (c.asunto?esc(c.asunto):'<i>Sin asunto</i>');
+  return `<div class="it" data-c="${c.id}" style="cursor:pointer"><div class="t"><div><b>${esc(c.nombre)}</b></div><div class="gris">${st}</div><div class="gris">${c.estado==='en_cola'?'Sale: '+fmt(c.programada_para):c.enviada_en?'Enviada: '+fmt(c.enviada_en):'Creada: '+fmt(c.creado)}</div></div><span class="chip ${c.estado}">${nomCamp[c.estado]}</span></div>`;
+}
+let CAMPS=[];
+function enlazarCamps(el,camps){el.querySelectorAll('[data-c]').forEach(d=>d.onclick=()=>{ if(el.id==='ultimas') ir('campanas'); abrirEditor(camps.find(c=>c.id===d.dataset.c)); });}
+async function cargarCampanas(){
+  CAMPS = await rpc('mail_campanas_lista',{p_tenant:T});
+  $('listaCamp').innerHTML = CAMPS.map(filaCamp).join('') || '<p class="gris">Todavía no hay campañas. Crea la primera.</p>';
+  enlazarCamps($('listaCamp'),CAMPS);
+}
+$('nuevaCamp').onclick=()=>abrirEditor(null);
+$('volver').onclick=()=>ir('campanas');
+const F={cNombre:'nombre',cAsunto:'asunto',cPre:'preheader',cTitulo:'titulo',cImg:'imagen_url',cCuerpo:'cuerpo',cBtn:'boton_texto',cUrl:'boton_url'};
+async function abrirEditor(c){
+  if(!RES.config){RES=await rpc('mail_resumen',{p_tenant:T});CFG=RES.config||{}}
+  camp=c; $('listaCampWrap').classList.add('oculto'); $('editor').classList.remove('oculto');
+  for(const id in F) $(id).value = c ? (c[F[id]]||'') : '';
+  if(!c){ $('cCuerpo').value='Hola {{nombre}},\n\n'; $('cBtn').value='Escríbenos por WhatsApp'; }
+  $('cSeg').innerHTML = `<option value="todos">Todos los contactos activos (${num(RES.activos)})</option>` + (RES.etiquetas||[]).map(e=>`<option value="${esc(e.etiqueta)}">${esc(e.etiqueta)} (${num(e.n)})</option>`).join('');
+  $('cSeg').value = c ? c.segmento : 'todos';
+  const ed = !c || c.estado==='borrador';
+  $('formCamp').querySelectorAll('input,textarea,select').forEach(x=>{ if(!['pruebaEmail'].includes(x.id)) x.disabled=!ed; });
+  ['guardar','enviar','cuando','bloqueEnvio','cuantos'].forEach(id=>$(id).classList.toggle('oculto',!ed));
+  if(!ed) $('fecha').classList.add('oculto');
+  $('edEstado').innerHTML = c ? `<span class="chip ${c.estado}">${nomCamp[c.estado]}</span>` : '<span class="chip borrador">Nueva</span>';
+  pintarReporte(c); prever(); contar(); window.scrollTo(0,0);
+}
+function pintarReporte(c){
+  if(!c || !c.total){ $('reporte').innerHTML=''; return; }
+  const barra=(t,a,b)=>`<div style="margin:8px 0"><div class="fila" style="justify-content:space-between"><span>${t}</span><b>${num(a)} · ${pct(a,b)}</b></div><div class="barra"><i style="width:${b?Math.min(100,a*100/b):0}%"></i></div></div>`;
+  $('reporte').innerHTML = `<div class="card"><h2>Resultados</h2>${barra('Enviados',c.enviados,c.total)}${barra('Entregados',c.entregados,c.enviados)}${barra('Abrieron',c.abiertos,c.enviados)}${barra('Dieron clic',c.clics,c.enviados)}
+    <p class="gris">Rebotes: ${num(c.rebotes)} · Se dieron de baja: ${num(c.bajas)} · Errores: ${num(c.errores)}</p>
+    <div class="fila">${['en_cola','enviando'].includes(c.estado)?'<button class="btn peligro" id="cancelar" style="flex:0 0 auto">Detener envío</button>':''}<button class="btn sec" id="duplicar" style="flex:0 0 auto">Duplicar como nueva</button></div></div>`;
+  $('cancelar') && ($('cancelar').onclick=async()=>{if(!confirm('¿Detener los correos que faltan por salir?'))return;await rpc('mail_campana_cancelar',{p_id:c.id});toast('Envío detenido');ir('campanas')});
+  $('duplicar').onclick=async()=>{const id=await rpc('mail_campana_duplicar',{p_id:c.id});await cargarCampanas();abrirEditor(CAMPS.find(x=>x.id===id))};
+}
+const datos=()=>{const o={};for(const id in F)o[F[id]]=$(id).value.trim();o.segmento=$('cSeg').value;return o};
+async function guardar(silencio){
+  const id = await rpc('mail_campana_guardar',{p_id:camp?camp.id:null,p_tenant:T,p_datos:datos()});
+  await cargarCampanas(); camp = CAMPS.find(c=>c.id===id); if(!silencio) toast('Guardado'); return id;
+}
+$('guardar').onclick=()=>guardar();
+let tPrev; Object.keys(F).forEach(id=>$(id).addEventListener('input',()=>{clearTimeout(tPrev);tPrev=setTimeout(prever,250)}));
+$('cSeg').onchange=contar;
+async function contar(){ const n=await rpc('mail_destinatarios_cuenta',{p_tenant:T,p_segmento:$('cSeg').value}); $('cuantos').textContent=`Le llegará a ${num(n)} contactos.`+(n>(CFG.limite_diario||0)?` Salen ${num(CFG.limite_diario)} por día, así que tardará unos ${Math.ceil(n/CFG.limite_diario)} días en salir completa.`:''); }
+$('cuando').onchange=()=>$('fecha').classList.toggle('oculto',$('cuando').value!=='prog');
+$('prueba').onclick=async()=>{
+  const em=$('pruebaEmail').value.trim(); if(!em){toast('Escribe tu correo');return}
+  const d=datos(); if(!d.asunto||!d.cuerpo){toast('Falta asunto o mensaje');return}
+  const id = (!camp||camp.estado==='borrador') ? await guardar(true) : camp.id;
+  await rpc('mail_campana_prueba',{p_id:id,p_email:em}); toast('Prueba en camino: revisa tu correo en 1 o 2 minutos (y la carpeta de spam).');
+};
+$('enviar').onclick=async()=>{
+  const d=datos(); if(!d.asunto||!d.cuerpo){toast('Falta asunto o mensaje');return}
+  let cuando=null;
+  if($('cuando').value==='prog'){ if(!$('fecha').value){toast('Elige fecha y hora');return} cuando=new Date($('fecha').value).toISOString(); }
+  const n=await rpc('mail_destinatarios_cuenta',{p_tenant:T,p_segmento:d.segmento});
+  if(!confirm(`¿${cuando?'Programar':'Enviar'} "${d.asunto}" a ${num(n)} contactos?`))return;
+  const id=await guardar(true);
+  const r=await rpc('mail_campana_encolar',{p_id:id,p_cuando:cuando});
+  toast(`Listo: ${num(r.destinatarios)} correos en cola.`); ir('campanas');
+};
+
+// vista previa (misma plantilla que el servidor)
+function cuerpoHtml(txt,nombre){
+  return esc((txt||'').replace(/\{\{\s*nombre\s*\}\}/gi,nombre)).split(/\n\s*\n/).map(p=>`<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1f2937">${p.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" style="color:inherit">$1</a>')}</p>`).join('');
+}
+function prever(){
+  const d=datos(), color=CFG.color||'#0a6cff', nombre='Juan';
+  const html=`<body style="margin:0;padding:0;background:#f1f4f8;font-family:Arial,Helvetica,sans-serif"><div style="padding:14px 10px;font-size:12px;color:#6b7280;font-family:Arial"><b style="color:#111">${esc(d.asunto.replace(/\{\{\s*nombre\s*\}\}/gi,nombre)||'(sin asunto)')}</b><br>${esc(d.preheader)}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:0 10px 24px"><table role="presentation" width="600" style="width:100%;max-width:600px;background:#fff;border-radius:12px;overflow:hidden" cellspacing="0" cellpadding="0">
+  <tr><td style="background:#0b1220;padding:20px 24px"><span style="font-size:22px;font-weight:800;letter-spacing:3px;color:#fff">${esc((NEG||'').toUpperCase())}</span></td></tr>
+  <tr><td style="padding:28px 24px 12px">${d.titulo?`<h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;color:#0b1220">${esc(d.titulo.replace(/\{\{\s*nombre\s*\}\}/gi,nombre))}</h1>`:''}${d.imagen_url?`<img src="${esc(d.imagen_url)}" style="display:block;width:100%;height:auto;border-radius:8px;margin:0 0 20px">`:''}${cuerpoHtml(d.cuerpo,nombre)}
+  ${d.boton_texto&&d.boton_url?`<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="background:${color};border-radius:8px"><span style="display:inline-block;padding:14px 26px;font-size:16px;font-weight:bold;color:#fff">${esc(d.boton_texto)}</span></td></tr></table>`:''}</td></tr>
+  <tr><td style="padding:20px 24px 28px;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.5;color:#6b7280">${esc(NEG)}<br>Recibes este correo porque nos dejaste tus datos en una expo o al pedir información.<br><u>Ya no quiero recibir estos correos</u></td></tr></table></td></tr></table></body>`;
+  $('prev').srcdoc=html;
+}
+</script>
+</body></html>

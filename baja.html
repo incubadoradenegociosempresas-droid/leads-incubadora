@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Darme de baja</title>
+<style>
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f4f8;color:#0b1220;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}
+.c{background:#fff;border-radius:12px;max-width:440px;width:100%;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.06);text-align:center}
+h1{font-size:22px;margin:0 0 10px}p{color:#4b5563;line-height:1.5;margin:0 0 20px}
+button{background:#0b1220;color:#fff;border:0;border-radius:8px;padding:14px 22px;font-size:16px;font-weight:bold;cursor:pointer;width:100%}
+button:disabled{opacity:.6}
+</style></head><body>
+<div class="c" id="c">
+  <h1>¿Ya no quieres recibir estos correos?</h1>
+  <p>Al confirmar, no te volveremos a enviar correos promocionales.</p>
+  <button id="b">Sí, darme de baja</button>
+</div>
+<script>
+const t = new URLSearchParams(location.search).get('t') || '';
+const c = document.getElementById('c'), b = document.getElementById('b');
+if (!/^[0-9a-f-]{36}$/i.test(t)) { c.innerHTML = '<h1>Enlace no válido</h1><p>Abre la liga “Ya no quiero recibir estos correos” directamente desde el correo.</p>'; }
+b && b.addEventListener('click', async () => {
+  b.disabled = true; b.textContent = 'Procesando…';
+  try {
+    const r = await fetch('https://ytxnmscxyjttqftmznqj.supabase.co/functions/v1/mail-baja?t=' + encodeURIComponent(t), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+    const d = await r.json();
+    c.innerHTML = d.ok
+      ? '<h1>Listo, te dimos de baja</h1><p>Ya no recibirás correos promocionales de ' + (d.negocio || 'este negocio').replace(/[<>&]/g, '') + '.</p>'
+      : '<h1>No encontramos tu registro</h1><p>Es posible que ya estés dado de baja.</p>';
+  } catch (e) { b.disabled = false; b.textContent = 'Reintentar'; }
+});
+</script>
+</body></html>
